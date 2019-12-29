@@ -1,0 +1,64 @@
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/asdf'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//uiop.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//asdf.fasl "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/asdf' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-aclrepl'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-aclrepl.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-aclrepl.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-aclrepl' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-bsd-sockets'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-bsd-sockets.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-bsd-sockets.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-bsd-sockets' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-capstone'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-capstone.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-capstone.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-capstone' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-cltl2'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-cltl2.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-cltl2.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-cltl2' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-concurrency'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-concurrency.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-concurrency.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-concurrency' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-cover'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-cover.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-cover.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-cover' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-executable'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-executable.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-executable.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-executable' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-gmp'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-gmp.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-gmp.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-gmp' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-grovel'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-grovel.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-grovel.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-grovel' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-introspect'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-introspect.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-introspect.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-introspect' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-md5'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-md5.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-md5.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-md5' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-mpfr'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-mpfr.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-mpfr.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-mpfr' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-posix'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-posix.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-posix.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-posix' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-queue'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-queue.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-queue.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-queue' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-rotate-byte'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-rotate-byte.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-rotate-byte.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-rotate-byte' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-rt'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-rt.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-rt.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-rt' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-simple-streams'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-simple-streams.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-simple-streams.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-simple-streams' から出ます
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-sprof'　に入ります
+cp /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-sprof.fasl /home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/obj/sbcl-home/contrib//sb-sprof.asd "/home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/contrib/"
+make: ディレクトリ '/home/tks/.roswell/src/sbcl-1.5.8-x86-64-linux/contrib/sb-sprof' から出ます
+
+SBCL has been installed:
+ binary /home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/bin/sbcl
+ core and contribs in /home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/lib/sbcl/
+
+Documentation:
+ man /home/tks/.roswell/impls/x86-64/linux/sbcl-bin/1.5.8/share/man/man1/sbcl.1

@@ -1,0 +1,28 @@
+{# -*- engine:django -*- #}
+
+
+
+{_ "hello" _}!!
+
+{% trans "hello" %}
+
+{% set-language :es %}
+
+{_ "hello" _}!!
+<br>
+{_ "salute-person" :name "Mariano" _}
+{_ "salute-person" :name user.name _}
+
+{% trans "hello" :name "Mariano" %}
+{% trans "hello" :name user.name %}
+
+{% set-language :en %}
+
+{_ "hello" _}!!
+<br>
+{_ "salute-person" :name "Mariano" _}
+{_ "salute-person" :name user.name _}
+
+{% trans "hello" %}
+{% trans "hello" :name "Mariano" %}
+{% trans "hello" :name user.name %}

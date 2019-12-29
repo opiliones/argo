@@ -1,0 +1,23 @@
+language: common-lisp
+
+sudo: false
+
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    - COVERAGE_EXCLUDE=t
+  matrix:
+    - LISP=sbcl COVERALLS=true
+    - LISP=ccl
+
+install:
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+  - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
+  - ros install prove
+
+before_script:
+  - ros run -- --version
+
+script:
+  - run-prove cl-locale-test.asd
