@@ -5,10 +5,10 @@
         (make-pathname :name ".sbclrc")
         (user-homedir-pathname)))
 
-(ql:quickload '(:yacc :cl-lex :cl-ppcre :sb-cltl2 :bordeaux-threads :kmrcl :sb-posix :getopt :alexandria) :silent t)
+(ql:quickload '(:yacc :cl-lex :cl-ppcre :sb-cltl2 :bordeaux-threads :kmrcl :sb-posix :getopt :alexandria :cl-fad) :silent t)
 
 (defpackage :cl-nsh
-  (:use :cl :yacc :cl-lex :cl-ppcre :sb-ext :sb-cltl2 :alexandria))
+  (:use :cl :yacc :cl-lex :cl-ppcre :sb-ext :sb-cltl2 :cl-fad))
 
 (in-package :cl-nsh)
 
@@ -207,9 +207,11 @@
   (case d (0 (redirect-fd f s *standard-input*))
           (1 (redirect-fd f s *standard-output*))
           (2 (redirect-fd f s *error-output*))
-          (t (with-open-file (h (if (stringp d) d (princ-to-string d))
-               :direction m1 :if-exists m2)
-               (redirect-fd f s h)))))
+          (t (if (streamp d)
+                (prog1 (redirect-fd f s d) (file-position d 0))
+                (with-open-file (h (if (stringp d) d (princ-to-string d))
+                  :direction m1 :if-exists m2)
+                  (redirect-fd f s h))))))
 
 (defun redirect-fd (f s d)
   (case s (0 (let ((*standard-input* d)) (funcall f)))
@@ -281,10 +283,13 @@
 (defmacro |list-val| (&rest xs)
   `(multiple-value-list (| | ,@xs)))
 
+(defun |path-exists| (p) (probe-file (princ-to-string p)))
+(defun |dir-exists| (p) (directory-exists-p (princ-to-string p)))
+
 (import-funcs (
   return values
-  read-line read-char
   eval
+  format unwind-protect
   list car cdr cons listp first rest second third fourth nth last length
   mapcar remove-if remove-if-not reduce remove-duplicates reverse append
   eq eql equal and or when unless if
@@ -311,13 +316,29 @@
 
 (defmacro |load| (f) `(print-eval (parse-file (if (symbolp ,f) (princ-to-string ,f) ,f))))
 
-; ~ loop tmpf tmpd chk dict udict ins del sep usep sub getenv setenv glob shift %
+(defmacro |form| (&rest xs) `(format nil (princ-to-string ,(car xs)) ,@(cdr xs)))
+
+(defun |shift| (&optional (n 1)) (let ((x (car |*|))) (setf |*| (cdr |*|)) x)) 
+
+(defun |glob| (g) (directory (princ-to-string g))) 
+
+(defmacro |tmpf| (&rest cmd)
+  (let ((f (gensym)))
+    `(with-open-temporary-file (,f :direction :io)
+      (| | ,@cmd ,f))))
+
+(defmacro |read| () `(read-line *standard-input* nil nil))
+(defmacro |read-char| () `(read-char *standard-input* nil nil))
+
+(defun |cd| (p) (sb-posix:chdir (princ-to-string p)))
+(defun |getenv| (v) (posix-getenv (princ-to-string v)))
+
+; ~ loop dict udict ins del sep usep sub
 
 (import-func <  |lt|)
 (import-func <= |le|)
 (import-func >  |gt|)
 (import-func >= |ge|)
-(import-func read-line |read|)
 
 (defun |echo| (&rest xs) (format t "~{~A~^ ~}~%" xs) xs)
 
