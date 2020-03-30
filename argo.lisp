@@ -20,15 +20,17 @@
   ("\\([ 	]*" (return (values '|(| '|(|)))
   ("[ 	]*\\)" (return (values '|)| '|)|)))
   ("[ 	]*([;\\n]+[ 	]*)+" (return (values '|;| '|;|)))
-  ("[ 	]*(\\|\\||&&|->)[ 	]*" (return (values '|&&| (intern (string-trim " 	" $@)))))
+  ("[ 	]*(\\|\\||&&)[ 	]*" (return (values '|&&| (intern (string-trim " 	" $@)))))
+  ("[ 	]*(->|-->)[ 	]*" (return (values '|->| (intern (string-trim " 	" $@)))))
   ("[ 	]*`[^`]+`[ 	]*" (return (values '|&&| (intern (string-trim " 	`" $@)))))
   ("[ 	]*(\\||&)[ 	]*" (return (values '|&| (intern (string-trim " 	" $@)))))
   ("[ 	]*(>>|>|<)[ 	]*" (return (values '|>| (intern (string-trim " 	" $@)))))
   ("\\$\\$[0-9]+" (return (values '$$* (read-from-string (subseq $@ 2)))))
   ("\\$[0-9]+" (return (values '$* (read-from-string (subseq $@ 1)))))
-  ("\\$\\$([^^{}()    \\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$$ (intern (subseq $@ 2)))))
-  ("\\$@([^^{}()    \\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$@ (intern (subseq $@ 2)))))
-  ("\\$([^^{}()    \\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (intern (subseq $@ 1)))))
+  ("\\$\\$([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$$ (intern (subseq $@ 2)))))
+  ("\\$@([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$@ (intern (subseq $@ 2)))))
+  ("\\$([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (intern (subseq $@ 1)))))
+  (":([^:^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (read-from-string $@))))
   ("\\^" (return (values '^ '^)))
   ("[ 	]*@" (return (values '@ '@)))
   ("[ 	]+" (return (values 'brank  'brank)))
@@ -56,9 +58,9 @@
 
 (define-parser nsh-parser
   (:start-symbol nsh)
-  (:terminals (symbol brank string number |$| |$$| |$@| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |{| |^(| |}| |;| |#|))
+  (:terminals (symbol brank string number |$| |$$| |$@| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |->| |{| |^(| |}| |;| |#|))
   (:precedence ((:right |#|) (:right |^|) (:right |@|) (:left |>|)
-                (:right |&|) (:right |&&|) (:right |;|)))
+                (:right |&|) (:right |&&|) (:left |->|) (:right |;|)))
 
   (nsh
     nil
@@ -95,6 +97,7 @@
     (|#| command #'(lambda (_ x) x))
     (command |&| command #'infix)
     (command |&&| command #'infix)
+    (command |->| command #'infix)
     (command |;| command #'infix)
     (command |>| command #'infix)
   )
@@ -189,7 +192,8 @@
   (cmdcall (splice-merge xs)))
 
 (defun cmdcall (xs)
-  (let ((f (car xs)) (args (cdr xs)))
+  (let* ((xs (macroexpand xs))
+         (f (car xs)) (args (cdr xs)))
     (cond ((functionp f) (apply f args))
           ((and (symbolp f) (fboundp f)) (apply f args))
           ((stringp f) (cmdcall (cons (intern f) args)))
@@ -236,23 +240,47 @@
 (defun |fork| (&rest xs)
   (if (zerop (sb-posix:fork)) (cmdcall xs) t))
 
-(defmacro |\|\|| (x y) `(or ,x ,y))
+(defmacro |\|\|| (x y)
+  (let ((f (cadr x)))
+    (cond
+      ((equal ''|let| f)
+        (let ((var (|init| (cddr x))))
+          `(| | ,f ,var ,(car (last x)) (or ,(eval (car var)) ,y))))
+      (t `(or ,x ,y)))))
 
-(defmacro |&&| (x y) `(and ,x ,y))
+(defmacro |&&| (x y)
+  (let ((f (cadr x)))
+    (cond
+      ((equal ''|let| f)
+        (let ((var (|init| (cddr x))))
+          `(| | ,f ,var ,(car (last x)) (and ,(eval (car var)) ,y))))
+      (t `(and ,x ,y)))))
 
 (defmacro |->| (x y)
   (let ((ret (gensym)))
     `(let ((,ret ,x))
       (,@y ,ret))))
 
-(defmacro |def| (f body)
+(defmacro |-->| (x y)
+  (let ((ret (gensym)))
+    `(let ((,ret (multiple-value-list ,x)))
+      (cmdcall (append (list ,@(cdr y)) ,ret)))))
+
+(defmacro |fn| (f body)
   (eval `(defun ,(eval f) (&rest |*|) (block nil ,body))) f)
+
+(defmacro |const| (n v)
+  (eval `(defconstant ,(eval n) ,v)))
 
 (defmacro |mac| (f body)
   (eval `(defmacro ,(eval f) (&rest |*|) (block nil ,body))) f)
 
 (defmacro import-func1 (x)
   `(import-func ,x ,(intern (string-downcase (princ-to-string x)))))
+
+(defun |to-lisp-symbol| (x)
+  (let ((y (if (symbolp x) x (eval x))))
+    (intern (string-upcase (princ-to-string y)))))
 
 (defmacro import-funcs (xs)
   `(progn ,@(mapcar #'(lambda (x) (list 'import-func1 x)) xs)))
@@ -280,15 +308,15 @@
   (let ((x (gensym)) (v (gensym)))
     `(multiple-value-bind (,x ,v) (|cmd| ,@xs) ,v)))
 
-(defmacro |list-val| (&rest xs)
-  `(multiple-value-list (| | ,@xs)))
-
 (defun |path-exists| (p) (probe-file (princ-to-string p)))
 (defun |dir-exists| (p) (directory-exists-p (princ-to-string p)))
+
+(defun |in-list| (&rest xs) (multiple-value-list (cmdcall xs)))
 
 (import-funcs (
   return values
   eval
+  throw catch
   format unwind-protect
   list car cdr cons listp first rest second third fourth nth last length
   mapcar remove-if remove-if-not reduce remove-duplicates reverse append
@@ -307,7 +335,27 @@
   numerator denominator
   complex realpart imagpart
   zerop plusp minusp evenp oddp integerp floatp rationalp realp complexp
+  subseq replace concatenate map
+  string-upcase string-downcase string-capitalize string-trim
+  string intern find-if position-if count-if position count search
+  parse-integer read-from-string
+  string= string-equal string< string< string-lessp
+  scan scan-to-strings all-matches-as-strings regex-replace regex-replace-all split
+  make-hash-table gethash remhash
 ))
+
+(import-func all-matches-as-strings |~|)
+(import-func regex-replace-all |sub|)
+
+(defmacro |sub| (x y z) `(regex-replace-all ,x ,z ,y))
+(defun |ulist| (&rest xs) (apply #'values (reduce #'append xs)))
+(defun |sep| (x &optional y)
+  (if y (split x y)
+        (split "[ 	\n]+" (string-trim " 	\n" x))))
+
+(defun |usep| (x &optional y)
+  (if y (reduce #'(lambda (a b) (concatenate 'string a x b)) y)
+        (format nil "~{~A~^ ~}" x)))
 
 (defun |true| (&optional &rest x) `(values t ,@x))
 (defun |:| (&optional &rest x) `(values t ,@x))
@@ -333,12 +381,53 @@
 (defun |cd| (p) (sb-posix:chdir (princ-to-string p)))
 (defun |getenv| (v) (posix-getenv (princ-to-string v)))
 
-; ~ loop dict udict ins del sep usep sub
+(defmacro |loop| (&rest xs)
+  `(loop ,@(trans-loop-symbols xs)))
+
+(defun trans-loop-symbols (xs)
+  (let ((x (car xs)) (xs (cdr xs)))
+    (cond ((eq x nil) nil)
+          ((member x '('|for| '|as| '|with|) :test #'equal)
+            `(,(|to-lisp-symbol| x) ,(eval (car xs)) ,@(trans-loop-symbols (cdr xs))))
+          ((equal x ''|named|)
+            `(named ,(eval (car xs)) ,@(trans-loop-symbols (cdr xs))))
+          ((equal x ''|using|)
+            (let ((y (car xs)))
+              `(using (,(|to-lisp-symbol| (second y)) ,(eval (third y))) ,@(trans-loop-symbols (cdr xs)))))
+          ((and (listp x) (eq 'quote (car x))) (cons (|to-lisp-symbol| x) (trans-loop-symbols xs)))
+          (t (cons x (trans-loop-symbols xs))))))
+
+(defun |idx| (&rest xs)
+  (let ((idxs (|init| xs)) (x (car (last xs))))
+    (apply #'values (if (hash-table-p x)
+      (mapcar #'(lambda (i) (gethash i x)) idxs)
+      (mapcar #'(lambda (i) (elt x i)) idxs)))))
+
+(defun |dict| (&rest xs)
+  (let ((m (make-hash-table)))
+    (apply #'|modf| `(,m ,@xs))))
+
+(defun |modf| (x &rest xs) 
+  (let ((n (car xs)) (v (cadr xs)))
+    (unless v (return-from |modf| x))
+    (if (hash-table-p x) (setf (gethash n x) v)
+                         (setf (elt x n) v))
+    (apply #'|modf| `(,x ,@(cddr xs)))
+    x))
+
+(defun |udict| (x)
+  (apply #'values
+    (loop for k being each hash-key of x
+        using (hash-value v)
+        collect k
+        collect v)))
 
 (import-func <  |lt|)
 (import-func <= |le|)
 (import-func >  |gt|)
 (import-func >= |ge|)
+
+(import-func concatenate |concat|)
 
 (defun |echo| (&rest xs) (format t "~{~A~^ ~}~%" xs) xs)
 
@@ -348,12 +437,18 @@
         (if (numberp n) n x))))
 
 (defun repl ()
-  (loop (print-eval (|parse| (read-line)))))
+  (kmrcl:set-signal-handler 2 (lambda (&rest _) ()))
+  (loop (format t "@ ")
+        (force-output)
+        (print-eval (|parse| (read-line)))))
 
-(defun build (file code) ())
+(defun build (file code)
+  (eval `(defun argo-main ()
+           (unwind-protect ,code (funcall *exit*))))
+  (save-lisp-and-die file :toplevel #'argo-main :executable t))
 
 (defun parse-file (file)
-  (parse (read-file-into-string file)))
+  (|parse| (alexandria:read-file-into-string file)))
 
 (defun |parse| (code)
   (parse-with-lexer (nsh-lexer (string-trim " 	
@@ -361,9 +456,10 @@
 
 (defun main ()
   (multiple-value-bind (out-args out-opts errors)
-    (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED)))
+    (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
     (cond
       (errors (format t "Usage: ~a [-b FILE] {-c CODE|FILE}~%" (car sb-ext:*posix-argv*)))
+      ((assoc "x" out-opts :test #'string=) (save-lisp-and-die "argo" :toplevel #'main :executable t))
       ((and (null out-opts) (null out-args)) (repl))
       (t (let* ((code (cdr (assoc "c" out-opts :test #'string=)))
                 (ast (if code
@@ -375,12 +471,19 @@
                      (print-eval ast)))))))
 
 (defun print-eval (p)
-  (print p)
-  (princ #\newline)
-  (print (sb-cltl2:macroexpand-all p))
-  (princ #\newline)
+  (when nil
+    (print p)
+    (princ #\newline)
+    (print (sb-cltl2:macroexpand-all p))
+    (princ #\newline))
   (unwind-protect
     (eval p)
     (funcall *exit*)))
+
+(setf sb-ext:*invoke-debugger-hook*  
+      (lambda (condition hook)
+        (declare (ignore hook))
+        (format t "~A~%" condition)
+        (sb-ext:quit :recklessly-p t)))
 
 (main)
