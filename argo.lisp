@@ -8,7 +8,7 @@
 (ql:quickload '(:yacc :cl-lex :cl-ppcre :sb-cltl2 :bordeaux-threads :kmrcl :sb-posix :getopt :alexandria :cl-fad) :silent t)
 
 (defpackage :cl-nsh
-  (:use :cl :yacc :cl-lex :cl-ppcre :sb-ext :sb-cltl2 :cl-fad))
+  (:use :cl :yacc :cl-lex :cl-ppcre :sb-ext :sb-cltl2 :cl-fad) (:export))
 
 (in-package :cl-nsh)
 
@@ -455,6 +455,12 @@
 ;" code)) nsh-parser))
 
 (defun main ()
+  (in-package :cl-nsh)
+  (setf sb-ext:*invoke-debugger-hook*  
+        (lambda (condition hook)
+          (declare (ignore hook))
+          (format t "~A~%" condition)
+          (sb-ext:quit :recklessly-p t)))
   (multiple-value-bind (out-args out-opts errors)
     (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
     (cond
@@ -479,11 +485,5 @@
   (unwind-protect
     (eval p)
     (funcall *exit*)))
-
-(setf sb-ext:*invoke-debugger-hook*  
-      (lambda (condition hook)
-        (declare (ignore hook))
-        (format t "~A~%" condition)
-        (sb-ext:quit :recklessly-p t)))
 
 (main)
