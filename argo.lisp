@@ -136,7 +136,11 @@
         ((symbolp f) `(cmdcall (list ,f ,@xs)))
         (t `(funcall ,f ,@xs))))
 
-(defun |cmd| (cmd &rest args)
+(defun |cmd| (&rest args)
+  (handler-case (apply #'cmd args)
+    (simple-error (c) (format *error-output* "~A~%" c))))
+
+(defun cmd (cmd &rest args)
   (let ((x (sb-ext:process-exit-code (sb-ext:run-program
              (princ-to-string cmd) (mapcar #'princ-to-string args)
              :output *standard-output* :input *standard-input* :search t))))
@@ -438,9 +442,15 @@
 
 (defun repl ()
   (kmrcl:set-signal-handler 2 (lambda (&rest _) ()))
-  (loop (format t "@ ")
-        (force-output)
-        (print-eval (|parse| (read-line)))))
+  (tagbody retry
+    (handler-bind
+      ((end-of-file (lambda (c) (sb-ext:quit :recklessly-p t))) 
+       (error (lambda (c) (format *error-output* "~A~%" c)
+                          (print c)
+                          (go retry))))
+      (loop (format t "@ ")
+            (force-output)
+            (print-eval (|parse| (read-line)))))))
 
 (defun build (file code)
   (eval `(defun argo-main ()
@@ -459,8 +469,9 @@
   (setf sb-ext:*invoke-debugger-hook*  
         (lambda (condition hook)
           (declare (ignore hook))
-          (format t "~A~%" condition)
-          (sb-ext:quit :recklessly-p t)))
+          (format *error-output* "~A~%" condition)
+          (sb-ext:quit :recklessly-p t)
+  ))
   (multiple-value-bind (out-args out-opts errors)
     (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
     (cond
@@ -483,7 +494,7 @@
     (print (sb-cltl2:macroexpand-all p))
     (princ #\newline))
   (unwind-protect
-    (eval p)
+      (eval p)
     (funcall *exit*)))
 
 (main)
