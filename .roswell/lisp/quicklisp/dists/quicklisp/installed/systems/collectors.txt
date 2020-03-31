@@ -1,1 +1,0 @@
-dists/quicklisp/software/collectors-20161204-git/collectors.asd

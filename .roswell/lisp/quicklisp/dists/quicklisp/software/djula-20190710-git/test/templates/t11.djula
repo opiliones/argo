@@ -1,2 +1,0 @@
-{% include "t10.djula" :x "Hello" :y 123 %}
-{% include "t10.djula" :x "Hello" :y name %}

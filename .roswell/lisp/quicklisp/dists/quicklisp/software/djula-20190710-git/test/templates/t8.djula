@@ -1,5 +1,0 @@
-{% extends "t1.djula" %}
-{% block all %}
-   {% super %}
-   after2
-{% endblock %}
