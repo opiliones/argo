@@ -420,11 +420,10 @@
     x))
 
 (defun |udict| (x)
-  (apply #'values
-    (loop for k being each hash-key of x
-        using (hash-value v)
-        collect k
-        collect v)))
+  (loop for k being each hash-key of x
+      using (hash-value v)
+      collect k
+      collect v))
 
 (import-func <  |lt|)
 (import-func <= |le|)
@@ -454,7 +453,8 @@
 
 (defun build (file code)
   (eval `(defun argo-main ()
-           (unwind-protect ,code (funcall *exit*))))
+           (let ((|*| (cdr sb-ext:*posix-argv*)))
+             (unwind-protect ,code (funcall *exit*)))))
   (save-lisp-and-die file :toplevel #'argo-main :executable t))
 
 (defun parse-file (file)
