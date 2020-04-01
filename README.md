@@ -202,20 +202,54 @@ a
 
 ### ulist
 
-### dict / udict
+```
+@ ulist (list 1 2 3) --> echo
+1 2 3
+```
 
-### modf
+### dict / idx / modf / udict
 
-### idx
-
+```
+@ dict a 1 b 2 -> idx a -> echo
+1
+@ let a (dict a 1 b 2); modf x b 4 c 3 -> udict -> echo
+(a 1 b 4 c 3)
+```
 ### tmpf
 
+```
+@ tmpf ^(echo a > $1; cat $1)
+a
+```
 ### glob
 
+```
+@ glob * -> echo
+(a b c)
+```
 ### form
+
+```
+@ echo (form '~~%' $PI)
+
+```
 
 ### true / false / :
 
+```
+@ true 1 --> echo
+T 1
+@ false 1 --> echo
+NIL 1
+@ : 1 --> echo
+1
+```
+
 ### sep / usep
+
+```
+@ sep " a  b c 12  " -> echo
+(a b c 12)
+@ seq " " 
 
 ### sub
