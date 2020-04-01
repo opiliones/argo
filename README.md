@@ -157,6 +157,8 @@ a b c
 ```
 
 ## 制御構造
+だいたいCLのやり方と同じ。
+
 ### 条件分岐
 
 ```
@@ -196,42 +198,24 @@ a
 a
 ```
 
-## 関数
-### リスト操作
+### 独自コマンド
 
-```
-@ list 1 2 3 -> echo
-(1 2 3)
-@ list 1 2 3 -> cdr -> echo
-(2 3)
-@ list 1 2 3 -> car -> echo
-1
-@ list 1 2 3 -> first -> echo
-1
-@ list 1 2 3 -> second -> echo
-2
-@ list 1 2 3 -> nth 2 -> echo
-3
-@ list 1 2 3 -> mapcar ^(echo $1)
-1
-2
-3
-@ list 1 2 3 -> reduce ^(+ $1 $2) -> echo
-6
-@ list 1 2 3 -> remove-if ^(= 2) -> echo
-(1 3)
-```
+## ulist
 
-### ハッシュテーブル
+## dict / udict
 
-```
+## modf
 
-```
+## idx
 
-### 文字列操作
+## tmpf
 
-### 数値演算
+## glob
 
-### ファイル操作
+## form
 
-### その他
+## true / false / :
+
+## sep / usep
+
+## sub
