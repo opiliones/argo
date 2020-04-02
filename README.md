@@ -350,8 +350,15 @@ T
 -1.0d0
 @ tan (/ $PI 4) -> echo
 1.0d0
-@ exp expt sqrt log
-  sqrt isqrt
+@ exp 2 -> echo
+7.389056
+@ expt 2 2 -> echo
+4
+@ sqrt 16 -> echo
+4.0
+@ log 1 -> echo
+0.0
+@ isqrt 
   abs
   conjugate phase signum cis
   gcd lcm
