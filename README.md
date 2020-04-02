@@ -250,6 +250,123 @@ NIL 1
 ```
 @ sep " a  b c 12  " -> echo
 (a b c 12)
-@ seq " " 
+@ seq " "  " a  b c 12  " -> echo
+( a  b c 12)
+@ seq " "  " a  b c 12  " -> usep , -> echo
+,a,,b,c,12 
+```
 
 ### sub
+
+```
+@ sub o 0 "Hello World" -> echo
+Hell0 W0rld
+```
+
+### その他
+
+```
+@ ^(echo $1; = 1 $1 && return; echo a) 1
+1
+@ values 1 2 --> echo
+1 2
+@ let a 1; eval {let a 2; echo $a $$a}
+2 1
+@ format $T '~a~%' hello
+hello
+@ block $NIL (unwind-protect (return; echo b) (echo a))
+a
+@ cons 1 2 -> echo
+(1 . 2)
+@ listp (list 1 2) -> echo
+T
+@ var a (list 1 2 3)
+@ car $a -> echo
+1
+@ rest $a -> echo
+(2 3)
+@ init $a -> echo
+(1 2)
+@ first $a -> echo
+1
+@ second $a -> echo
+2
+@ third $a -> echo
+3
+@ fourth $a -> echo
+NIL
+@ nth 0 $a -> echo
+1
+@ last $a -> echo
+(3)
+@ length $a -> echo
+3
+@ mapcar ^(echo $1; + 1 1) $a -> echo $a
+1
+2
+3
+(2 3 4)
+@ remove-if ^(= 1 $1) $a -> echo
+(2 3)
+@ remove-if-not ^(= 1 $1) $a -> echo
+(1)
+@ reduce + $a -> echo
+6
+@ remove-duplicates (list 1 1 2 3) -> echo
+(1 2 3)
+@ reverse $a -> echo
+(3 2 1)
+@ append $a (reverse $a) -> echo
+1 2 3 3 2 1
+@ eq a a -> echo
+T
+@ eq $a $a -> echo
+NIL
+@ eql 1 1 -> echo
+T
+@ eql "a" "a" -> echo
+NIL
+@ equal $a $a -> echo
+T
+@ and (eql 1 1) a -> echo
+a
+@ or (eql "a" "a") a -> echo
+a
+@ when (eql 1 1) (echo a) (echo b)
+a
+b
+@ unless (eql "a" "a") (echo a) (echo b)
+a
+b
+@ numberp 1 -> echo
+T
+@ max 1 3 2 -> echo
+3
+@ min 2 1 3 -> echo
+1
+@ sin (/ $PI 2) -> echo
+1.0d0
+@ cos $PI -> echo
+-1.0d0
+@ tan (/ $PI 4) -> echo
+1.0d0
+@ exp expt sqrt log
+  sqrt isqrt
+  abs
+  conjugate phase signum cis
+  gcd lcm
+  floor ceiling round ffloor fceiling fround
+  truncate ftruncate mod rem
+  float
+  rational rationalize
+  numerator denominator
+  complex realpart imagpart
+  zerop plusp minusp evenp oddp integerp floatp rationalp realp complexp
+  subseq replace concatenate map
+  string-upcase string-downcase string-capitalize string-trim
+  string intern find-if position-if count-if position count search
+  parse-integer read-from-string
+  string= string-equal string< string< string-lessp
+  scan scan-to-strings all-matches-as-strings regex-replace regex-replace-all split
+  make-hash-table gethash remhash
+```
