@@ -14,6 +14,47 @@ argo \[-b BINARY-FILE] \[-c STRING|FILE]
 
 引数を指定しない場合はREPLが起動します。
 
+## コード例
+
+### フィボナッチ数列
+
+```
+fn fib (
+  le $1 2 && return 1
+  + (- $1 1 -> fib) (- $1 2 -> fib)
+)
+
+fib (num $1) -> echo
+```
+
+### Fizz Bazz
+
+```
+seq 1 100 | loop (
+  read || return -> ^(
+    let n (num $1)
+    (= 0 (mod $n 15)) && return (echo FizzBuzz)
+    (= 0 (mod $n 3))  && return (echo Fizz)
+    (= 0 (mod $n 5))  && return (echo Buzz)
+    echo $1
+  )
+)
+```
+又は
+
+```
+seq 1 100 | loop (
+  read || return -> ^(
+    let n (num $1)
+    echo (cond \
+      ((= 0 (mod $n 15)) FizzBuzz)\
+      ((= 0 (mod $n 3))  Fizz)\
+      ((= 0 (mod $n 5))  Buzz)\
+      (t $1))
+  )
+)
+```
+
 ## shに似た機能
 ### コマンド実行
 
@@ -263,6 +304,13 @@ NIL 1
 ```
 @ sub o 0 "Hello World" -> echo
 Hell0 W0rld
+```
+
+### num
+
+```
+@ + (num "1") (num 1) -> echo
+2
 ```
 
 ### その他
