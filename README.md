@@ -207,13 +207,15 @@ a
 1 2 3
 ```
 
-### dict / idx / modf / udict
+### dict / idx / modf / rem / udict
 
 ```
 @ dict a 1 b 2 -> idx a -> echo
 1
 @ let a (dict a 1 b 2); modf x b 4 c 3 -> udict -> echo
 (a 1 b 4 c 3)
+@ dict a 1 b 2 -> rem a -> udict -> echo
+(b 2)
 ```
 ### tmpf
 
@@ -358,22 +360,122 @@ T
 4.0
 @ log 1 -> echo
 0.0
-@ isqrt 
-  abs
-  conjugate phase signum cis
-  gcd lcm
-  floor ceiling round ffloor fceiling fround
-  truncate ftruncate mod rem
-  float
-  rational rationalize
-  numerator denominator
-  complex realpart imagpart
-  zerop plusp minusp evenp oddp integerp floatp rationalp realp complexp
-  subseq replace concatenate map
-  string-upcase string-downcase string-capitalize string-trim
-  string intern find-if position-if count-if position count search
-  parse-integer read-from-string
-  string= string-equal string< string< string-lessp
-  scan scan-to-strings all-matches-as-strings regex-replace regex-replace-all split
-  make-hash-table gethash remhash
+@ abs -1 -> echo
+1
+@ conjugate (complex 1 1) -> echo
+#C(1 -1)
+@ phase (complex 1 1) -> echo
+0.7853982
+@ signum -2.0 -> echo
+-1.0
+@ cis (/ $PI 4) -> echo
+#C(0.7071067811865476d0 0.7071067811865475d0)
+@ gcd 144 120 -> echo
+24
+@ lcm 144 120 -> echo
+720
+@ floor $PI -> echo
+3
+@ ceiling $PI -> echo
+4
+@ round $PI -> echo
+3
+@ ffloor $PI -> echo
+3.0d0
+@ fceiling $PI -> echo
+4.0d0
+@ fround $PI -> echo
+3.0d0
+@ truncate (* -1 $PI) -> echo
+-3
+@ ftruncate (* -1 $PI) -> echo
+-3.0d0
+@ mod $PI 1 -> echo
+0.14159265358979312d0
+@ rem (* -1 $PI) 1 -> echo
+-0.14159265358979312d0
+@ float 1 -> echo
+1.0
+@ rational 0.99999999 -> echo
+1
+@ numerator (/ 3 12) -> echo
+1
+@ denominator (/ 3 12) -> echo
+4
+@ realpart (complex 1 1) -> echo
+1
+@ imagpart (complex 1 1) -> echo
+1
+@ zerop 0 -> echo
+T
+@ plusp 1 -> echo
+T
+@ minusp -1 -> echo
+T
+@ evenp 1 -> echo
+NIL
+@ oddp 1 -> echo
+T
+@ integerp 1 -> echo
+T
+@ floatp 1.0 -> echo
+T
+@ rationalp 1 -> echo
+T
+@ realp 1 -> echo
+T
+@ complexp 1 -> echo
+NIL
+@ subseq "hello" 3 -> echo
+lo
+@ let a "Zeppo Marx"; replace $a "Harpo" :end1 5 -> echo
+@ concatenate STRING "hello" " " "world" -> echo
+hello world
+@ map STRING ^(echo $1; : $1) "hello"
+h
+e
+l
+l
+o
+@ string-upcase "hello" -> echo
+HELLO
+@ string-downcase "HELLO" -> echo
+hello
+@ string-capitalize "hello world" -> echo
+Hello World
+@ string-trim " " "  hello  " -> echo
+hello
+@ string a -> echo
+a
+@ intern "a" -> echo
+a
+@ search "we" "If we can't be free we can at least be cheap" :from-end $T -> echo
+20
+@ parse-integer "42" :radix 8 -> echo
+34
+@ read-from-string '#\a' -> echo
+a
+@ string= "a" "a" -> echo
+T
+@ string-equal "a" "A" -> echo
+T
+@ string-gt "a" "b" -> echo
+NIL
+@ string-lt "a" "b" -> echo
+0
+@ scan "b" "abc" -> echo
+1
+@ scan-to-strings "\\d+" "Originally specified in 1958, Lisp is" -> echo
+1958
+@ all-matches-as-strings "\\w+" "foo bar baz" -> echo
+(foo bar baz)
+@ regex-replace "<" "<<<" "&lt;" -> echo
+&lt;<<
+@ regex-replace-all "<" "<<<" "&lt;" -> echo
+&lt;&lt;&lt;
+@ split "," "a,b,c" -> echo
+(a b c)
+@ let a make-hash-table -> 
+@ gethash
+@ remhash
 ```
