@@ -12,9 +12,11 @@
 
 (in-package :cl-nsh)
 
+(defun test () "{[ 	]*")
+
 (define-string-lexer nsh-lexer
-  ("{[ 	]*" (return (values '{ '{)))
-  ("\\^\\([ 	]*" (return (values '|^(| '|^(|)))
+  ((test) (return (values '{ '{)))
+  ("\\^\\([\\n 	]*" (return (values '|^(| '|^(|)))
   ("[ 	]*}" (return (values '} '})))
   ("[ 	]*#[^\\n]*" (return (values '|#| '|#|)))
   ("\\([\\n 	]*" (return (values '|(| '|(|)))
@@ -36,7 +38,7 @@
   ("[ 	]+" (return (values 'brank  'brank)))
   ("\"([^\\\\\"]|\\\\.)*\"" (return (values 'string (read-from-string $@))))
   ("'([^']|'')*'" (return (values 'string (regex-replace-all "''" (subseq $@ 1 (- (length $@) 1)) "'"))))
-  ("-?0|[1-9][0-9]*(\\.[0-9]*)?([e|E][+-]?[0-9]+)?" (return (values 'number (read-from-string $@))))
+  ("-?(0|[1-9][0-9]*)(\\.[0-9]*)?([e|E][+-]?[0-9]+)?" (return (values 'number (read-from-string $@))))
   ("([^^{}() 	\\n#\\\\\"`'!$&|<>;]|\\.)+" (return (values 'symbol (intern $@))))
 )
 
@@ -348,23 +350,25 @@
   make-hash-table gethash remhash
 ))
 
-(import-func all-matches-as-strings |~|)
-(import-func regex-replace-all |sub|)
+(import-func string< |string-lt|)
+(import-func string> |string-gt|)
 
-(defmacro |sub| (x y z) `(regex-replace-all ,x ,z ,y))
+(defmacro |var| (x y) `(defvar ,(eval x) ,y))
+(defmacro |~| (x y) `(all-matches-as-strings (princ-to-string ,x) (princ-to-string ,y))) 
+(defmacro |sub| (x y z) `(regex-replace-all (princ-to-string ,x) (princ-to-string ,z) (princ-to-string ,y)))
 (defun |ulist| (&rest xs) (apply #'values (reduce #'append xs)))
 (defun |sep| (x &optional y)
-  (if y (split x y)
+  (if y (split (princ-to-string x) y)
         (split "[ 	\n]+" (string-trim " 	\n" x))))
 
 (defun |usep| (x &optional y)
-  (if y (reduce #'(lambda (a b) (concatenate 'string a x b)) y)
+  (if y (let ((x (princ-to-string x))) (reduce #'(lambda (a b) (concatenate 'string a x b)) y))
         (format nil "~{~A~^ ~}" x)))
 
-(defun |true| (&optional &rest x) `(values t ,@x))
-(defun |:| (&optional &rest x) `(values t ,@x))
+(defmacro |true| (&optional &rest x) `(values t ,@x))
+(defmacro |:| (&optional &rest x) `(values ,@x))
 
-(defun |false| (&optional &rest x) `(values nil ,@x))
+(defmacro |false| (&optional &rest x) `(values nil ,@x))
 
 (defmacro |load| (f) `(print-eval (parse-file (if (symbolp ,f) (princ-to-string ,f) ,f))))
 
@@ -425,6 +429,10 @@
       collect k
       collect v))
 
+(defun |rem| (x y)
+  (remhash x y)
+  y)
+
 (import-func <  |lt|)
 (import-func <= |le|)
 (import-func >  |gt|)
@@ -445,7 +453,6 @@
     (handler-bind
       ((end-of-file (lambda (c) (sb-ext:quit :recklessly-p t))) 
        (error (lambda (c) (format *error-output* "~A~%" c)
-                          (print c)
                           (go retry))))
       (loop (format t "@ ")
             (force-output)
