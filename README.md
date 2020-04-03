@@ -475,7 +475,4 @@ NIL
 &lt;&lt;&lt;
 @ split "," "a,b,c" -> echo
 (a b c)
-@ let a make-hash-table -> 
-@ gethash
-@ remhash
 ```
