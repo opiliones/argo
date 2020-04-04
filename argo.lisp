@@ -26,6 +26,9 @@
   `(define-string-lexer ,x
      ,@(mapcar #'(lambda (y) (cons (eval (car y)) (cdr y))) xs)))
 
+(defun trim-brank (s) (string-trim " 	\\
+" s))
+
 (my-define-string-lexer nsh-lexer
   ((brank-and "#[^\\n]*") (return (values '|#| '|#|)))
   ((and-nl "{") (return (values '{ '{)))
@@ -34,11 +37,10 @@
   ((and-nl "\\(") (return (values '|(| '|(|)))
   ((nl-and "\\)") (return (values '|)| '|)|)))
   ((many1 (in-brank "[;\\n]")) (return (values '|;| '|;|)))
-  ((in-brank-nl "(\\|\\||&&)") (return (values '|&&| (intern (string-trim " 	" $@)))))
-  ((in-brank-nl "(->|-->)") (return (values '|->| (intern (string-trim " 	" $@)))))
-  ((in-brank-nl "`[^`]+`") (return (values '|&&| (intern (string-trim " 	`" $@)))))
-  ((in-brank-nl "(\\||&)") (return (values '|&| (intern (string-trim " 	" $@)))))
-  ((in-brank-nl "(>>|>|<)") (return (values '|>| (intern (string-trim " 	" $@)))))
+  ((in-brank-nl "(\\|\\|\\||&&&|\\|\\||&&)") (return (values '|&&| (intern (trim-brank $@)))))
+  ((in-brank-nl "(->|-->)") (return (values '|->| (intern (trim-brank $@)))))
+  ((in-brank-nl "(\\||&)") (return (values '|&| (intern (trim-brank $@)))))
+  ((in-brank-nl "(>>|>|<)") (return (values '|>| (intern (trim-brank $@)))))
   ("\\$\\$[0-9]+" (return (values '$$* (read-from-string (subseq $@ 2)))))
   ("\\$[0-9]+" (return (values '$* (read-from-string (subseq $@ 1)))))
   ("\\$\\$([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$$ (intern (subseq $@ 2)))))
@@ -47,12 +49,25 @@
   (":([^:^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (read-from-string $@))))
   ("\\^" (return (values '^ '^)))
   ((brank-and "@") (return (values '@ '@)))
+  ((in-brank-nl "`[^ 	]+") (return (values '|&&| (intern (subseq (trim-brank $@) 1)))))
   ("(\\\\\\n|[ 	])+" (return (values 'brank  'brank)))
   ("\"([^\\\\\"]|\\\\.)*\"" (return (values 'string (read-from-string $@))))
   ("'([^']|'')*'" (return (values 'string (regex-replace-all "''" (subseq $@ 1 (- (length $@) 1)) "'"))))
   ("-?(0|[1-9][0-9]*)(\\.[0-9]*)?([e|E][+-]?[0-9]+)?" (return (values 'number (read-from-string $@))))
-  ("([^^{}() 	\\n#\\\\\"`'!$&|<>;]|\\\\.)+" (return (values 'symbol (intern $@))))
+  ("([^^{}() 	\\n#\\\\\"`'!$&|<>;]|\\\\.)+" (return (values 'symbol (intern (parse-escacpe $@)))))
 )
+
+(defun parse-escacpe (s)
+  (if (find #\\ s :test #'equal)
+    (with-input-from-string  (in s)
+      (with-output-to-string (*standard-output*)
+        (loop
+          (let ((c (read-char in nil nil)))
+            (case c
+              ('nil (return))
+              (#\\  (princ (read-char in nil nil)))
+              (t    (princ c)))))))
+    s))
 
 (defun comma (x) (cadr ``,,x))
 (defun at-comma (x) (car (cadadr `'`(,@,x))))
@@ -154,10 +169,14 @@
   (handler-case (apply #'cmd args)
     (simple-error (c) (format *error-output* "~A~%" c))))
 
+(defvar *standard-input-overloaded* nil)
+(defun standard-input ()
+  (if *standard-input-overloaded* *standard-input* t)) 
+
 (defun cmd (cmd &rest args)
   (let ((x (sb-ext:process-exit-code (sb-ext:run-program
              (princ-to-string cmd) (mapcar #'princ-to-string args)
-             :output *standard-output* :input *standard-input* :search t))))
+             :output *standard-output* :input (standard-input) :search t))))
     (values (eq x 0) x)))
 
 (defun |init| (xs)
@@ -185,6 +204,7 @@
                              (unwind-protect (progn ,x))
                                (close *standard-output*)
                                (sb-unix:unix-close ,w)))))
+               (*standard-input-overloaded* t)
                (*standard-input*
                  (sb-sys:make-fd-stream ,r :input t))
                (,ret1 (unwind-protect ,y
@@ -236,7 +256,8 @@
                   (redirect-fd f s h))))))
 
 (defun redirect-fd (f s d)
-  (case s (0 (let ((*standard-input* d)) (funcall f)))
+  (case s (0 (let ((*standard-input* d) (*standard-input-overloaded* t))
+               (funcall f)))
           (1 (let ((*standard-output* d)) (funcall f)))
           (2 (let ((*error-output* d)) (funcall f)))))
 
@@ -273,6 +294,12 @@
         (let ((var (|init| (cddr x))))
           `(| | ,f ,var ,(car (last x)) (and ,(eval (car var)) ,y))))
       (t `(and ,x ,y)))))
+
+(defmacro |&&&| (x y)
+  `(|&&| ,x (return ,y)))
+
+(defmacro |\|\|\|| (x y)
+  `(|\|\|| ,x (return ,y)))
 
 (defmacro |->| (x y)
   (let ((ret (gensym)))
@@ -474,7 +501,7 @@
   (eval `(defun argo-main ()
            (let ((|*| (cdr sb-ext:*posix-argv*)))
              (unwind-protect ,code (funcall *exit*)))))
-  (save-lisp-and-die file :toplevel #'argo-main :executable t))
+  (save-lisp-and-die file :toplevel #'argo-main :executable t :purify t))
 
 (defun parse-file (file)
   (|parse| (alexandria:read-file-into-string file)))
@@ -495,7 +522,8 @@
     (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
     (cond
       (errors (format t "Usage: ~a [-b FILE] {-c CODE|FILE}~%" (car sb-ext:*posix-argv*)))
-      ((assoc "x" out-opts :test #'string=) (save-lisp-and-die "argo" :toplevel #'main :executable t))
+      ((assoc "x" out-opts :test #'string=)
+        (save-lisp-and-die "argo" :toplevel #'main :executable t :purify t))
       ((and (null out-opts) (null out-args)) (repl))
       (t (let* ((code (cdr (assoc "c" out-opts :test #'string=)))
                 (ast (if code
@@ -507,7 +535,7 @@
                      (print-eval ast)))))))
 
 (defun print-eval (p)
-  (when nil
+  (when t;nil
     (print p)
     (princ #\newline)
     (print (sb-cltl2:macroexpand-all p))
