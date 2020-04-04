@@ -408,7 +408,7 @@
         (format nil "~{~A~^ ~}" x)))
 
 (defmacro |true| (&optional &rest x) `(values t ,@x))
-(defmacro |:| (&optional &rest x) `(values ,@x))
+(defmacro |:| (&optional &rest x) `(values ,@(if x x '(0))))
 
 (defmacro |false| (&optional &rest x) `(values nil ,@x))
 
