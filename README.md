@@ -33,9 +33,9 @@ fib (num $1) -> echo
 seq 1 100 | loop (
   read || return -> ^(
     let n (num $1)
-    (= 0 (mod $n 15)) && return (echo FizzBuzz)
-    (= 0 (mod $n 3))  && return (echo Fizz)
-    (= 0 (mod $n 5))  && return (echo Buzz)
+    (= 0 (mod $n 15)) &&& echo FizzBuzz
+    (= 0 (mod $n 3))  &&& echo Fizz
+    (= 0 (mod $n 5))  &&& echo Buzz
     echo $1
   )
 )
