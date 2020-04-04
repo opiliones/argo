@@ -535,7 +535,7 @@
                      (print-eval ast)))))))
 
 (defun print-eval (p)
-  (when t;nil
+  (when nil
     (print p)
     (princ #\newline)
     (print (sb-cltl2:macroexpand-all p))
