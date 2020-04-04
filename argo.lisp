@@ -43,10 +43,11 @@
   ((in-brank-nl "(>>|>|<)") (return (values '|>| (intern (trim-brank $@)))))
   ("\\$\\$[0-9]+" (return (values '$$* (read-from-string (subseq $@ 2)))))
   ("\\$[0-9]+" (return (values '$* (read-from-string (subseq $@ 1)))))
-  ("\\$\\$([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$$ (intern (subseq $@ 2)))))
-  ("\\$@([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$@ (intern (subseq $@ 2)))))
-  ("\\$([^^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (intern (subseq $@ 1)))))
-  (":([^:^{}() 	\\n#\\\\\"'!$&|<>;]|\\.)+" (return (values '$ (read-from-string $@))))
+  ("\\$\\$([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$$ (intern (subseq $@ 2)))))
+  ("\\$@[0-9]+" (return (values '$@* (read-from-string (subseq $@ 2)))))
+  ("\\$@([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$@ (intern (subseq $@ 2)))))
+  ("\\$([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$ (intern (subseq $@ 1)))))
+  (":([^:^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$ (read-from-string $@))))
   ("\\^" (return (values '^ '^)))
   ((brank-and "@") (return (values '@ '@)))
   ((in-brank-nl "`[^ 	]+") (return (values '|&&| (intern (subseq (trim-brank $@) 1)))))
@@ -71,6 +72,7 @@
 
 (defun comma (x) (cadr ``,,x))
 (defun at-comma (x) (car (cadadr `'`(,@,x))))
+(defun at-comma-n (n) (car (cadadr `'`(,@(nth ,n |*|)))))
 (defun asta-comma (n) (cadr ``,(nth ,n |*|)))
 (defvar *bq* (car '`,()))
 (defvar *exit* #'(lambda () ()))
@@ -87,7 +89,7 @@
 
 (define-parser nsh-parser
   (:start-symbol nsh)
-  (:terminals (symbol brank string number |$| |$$| |$@| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |->| |{| |^(| |}| |;| |#|))
+  (:terminals (symbol brank string number |$| |$$| |$@| |$@*| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |->| |{| |^(| |}| |;| |#|))
   (:precedence ((:right |#|) (:right |^|) (:right |@|) (:left |>|)
                 (:right |&|) (:right |&&|) (:left |->|) (:right |;|)))
 
@@ -103,6 +105,7 @@
     (symbol #'(lambda (s) `',s))
     (|$$| #'comma)
     (|$@| #'at-comma)
+    (|$@*| #'(lambda (n) (at-comma-n (- n 1))))
     (|$*| #'(lambda (n) `(nth ,(- n 1) *)))
     (|$$*| #'(lambda (n) (asta-comma (- n 1))))
     (|(| nsh |)| #'(lambda (l nsh r) nsh))
