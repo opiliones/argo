@@ -21,7 +21,7 @@ argo \[-b BINARY-FILE] \[-c STRING|FILE]
 ```
 fn fib (
   le $1 2 && return 1
-  + (- $1 1 -> fib) (- $1 2 -> fib)
+  + (fib (- $1 1)) (fib (- $1 2))
 )
 
 fib (num $1) -> echo
