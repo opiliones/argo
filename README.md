@@ -21,7 +21,7 @@ argo \[-b BINARY-FILE] \[-c STRING|FILE]
 ```
 fn fib (
   le $1 2 && return 1
-  + (- $1 1 -> fib) (- $1 2 -> fib)
+  + (fib (- $1 1)) (fib (- $1 2))
 )
 
 fib (num $1) -> echo
@@ -157,8 +157,16 @@ T 0
 ### 変数
 
 ```
-@ let x (list 1 2 3); cdr $x
+@ var x 1
+@ echo $x
+1
+@ let x (list 1 2 3); cdr $x -> echo
 (2 3)
+@ const y 1
+@ echo $y
+1
+@ let y 2; echo $y
+;; -> コンパイルエラーになる
 ```
 
 ### 関数
@@ -181,10 +189,8 @@ a
 ```
 @ mac m {echo $1 $$1; echo @$1 @$$1}
 @ ^(m (list 1 2 3)) (list a b c)
-(a b c)
-(1 2 3)
-a b c
-1 2 3
+(a b c) (1 2 3)
+a b c 1 2 3
 ```
 
 ### スレッド
