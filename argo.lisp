@@ -43,11 +43,11 @@
   ((in-brank-nl "(>>|>|<)") (return (values '|>| (intern (trim-brank $@)))))
   ("\\$\\$[0-9]+" (return (values '$$* (read-from-string (subseq $@ 2)))))
   ("\\$[0-9]+" (return (values '$* (read-from-string (subseq $@ 1)))))
-  ("\\$\\$([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$$ (intern (subseq $@ 2)))))
+  ("\\$\\$([^^{}() 	\\n#\\\\\"'$&|<>;])+" (return (values '$$ (intern (subseq $@ 2)))))
   ("\\$@[0-9]+" (return (values '$@* (read-from-string (subseq $@ 2)))))
-  ("\\$@([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$@ (intern (subseq $@ 2)))))
-  ("\\$([^^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$ (intern (subseq $@ 1)))))
-  (":([^:^{}() 	\\n#\\\\\"'!$&|<>;])+" (return (values '$ (read-from-string $@))))
+  ("\\$@([^^{}() 	\\n#\\\\\"'$&|<>;])+" (return (values '$@ (intern (subseq $@ 2)))))
+  ("\\$([^^{}() 	\\n#\\\\\"'$&|<>;])+" (return (values '$ (intern (subseq $@ 1)))))
+  (":([^:^{}() 	\\n#\\\\\"'$&|<>;])+" (return (values '$ (read-from-string $@))))
   ("\\^" (return (values '^ '^)))
   ((brank-and "@") (return (values '@ '@)))
   ((in-brank-nl "`[^ 	]+") (return (values '|&&| (intern (subseq (trim-brank $@) 1)))))
@@ -55,7 +55,7 @@
   ("\"([^\\\\\"]|\\\\.)*\"" (return (values 'string (read-from-string $@))))
   ("'([^']|'')*'" (return (values 'string (regex-replace-all "''" (subseq $@ 1 (- (length $@) 1)) "'"))))
   ("-?(0|[1-9][0-9]*)(\\.[0-9]*)?([e|E][+-]?[0-9]+)?" (return (values 'number (read-from-string $@))))
-  ("([^^{}() 	\\n#\\\\\"`'!$&|<>;]|\\\\.)+" (return (values 'symbol (intern (parse-escacpe $@)))))
+  ("([^^{}() 	\\n#\\\\\"`'$&|<>;]|\\\\.)+" (return (values 'symbol (intern (parse-escacpe $@)))))
 )
 
 (defun parse-escacpe (s)
@@ -96,6 +96,7 @@
   (nsh
     nil
     command
+    (command |;| (lambda (c _) c))
   )
 
   (word
@@ -304,6 +305,8 @@
 (defmacro |\|\|\|| (x y)
   `(|\|\|| ,x (return ,y)))
 
+(defmacro |!| (&rest xs) `(not (| | ,@xs)))
+
 (defmacro |->| (x y)
   (let ((ret (gensym)))
     `(let ((,ret ,x))
@@ -315,7 +318,10 @@
       (cmdcall (append (list ,@(cdr y)) ,ret)))))
 
 (defmacro |fn| (f body)
-  (eval `(defun ,(eval f) (&rest |*|) (block nil ,body))) f)
+  (let* ((tmp (intern (concatenate 'string "#" (princ-to-string (eval f)))))
+         (c `(defun ,tmp (&rest |*|) (block nil ,body))))
+    (eval `(defun ,(eval f) (&rest |*|) (block nil ,body)))
+    `(progn (eval ',c) (setf (fdefinition ,f) (fdefinition ',tmp)))))
 
 (defmacro |const| (n v)
   (eval `(defconstant ,(eval n) ,v)))
@@ -538,13 +544,14 @@
                      (print-eval ast)))))))
 
 (defun print-eval (p)
-  (when nil
-    (print p)
-    (princ #\newline)
-    (print (sb-cltl2:macroexpand-all p))
-    (princ #\newline))
-  (unwind-protect
-      (eval p)
-    (funcall *exit*)))
+  (handler-bind ((warning (lambda (x) (muffle-warning x))))
+    (when nil
+      (print p)
+      (princ #\newline)
+      (print (sb-cltl2:macroexpand-all p))
+      (princ #\newline))
+    (unwind-protect
+        (eval p)
+      (funcall *exit*))))
 
 (main)
