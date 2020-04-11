@@ -211,13 +211,13 @@ a b c 1 2 3
 ### 条件分岐
 
 ```
-@ if true {echo a} {echo b}
+@ if $T {echo a} {echo b}
 a
-@ if false {echo a} {echo b}
+@ if $NIL {echo a} {echo b}
 b
-@ cond {{eq a b} {echo a}} {{eq b b} {echo b}}
+@ cond ({eq a b} {echo a}) ({eq b b} {echo b})
 b
-@ case 1 {0 {echo 0}} {1 {echo 1}} {2 {echo 2}}
+@ case 1 (0 {echo 0}) (1 {echo 1}) (2 {echo 2})
 1
 ```
 
