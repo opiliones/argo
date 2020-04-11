@@ -143,9 +143,13 @@ c
 ### スプライシング
 
 ```
-@ echo @{list a b c}
+@ echo :{a b c}
+(a b c)
+@ echo @:{a b c}
 a b c
 ```
+
+なお、`:{...}`は`{list ...}`の省記である。
 
 ### パイプ演算子
 
@@ -162,7 +166,7 @@ T 0
 @ var x 1
 @ echo $x
 1
-@ let x {list 1 2 3}; cdr $x -> echo
+@ let x :{1 2 3}; cdr $x -> echo
 (2 3)
 @ const y 1
 @ echo $y
@@ -189,8 +193,8 @@ a
 ### マクロ
 
 ```
-@ mac m {echo $1 $$1; echo @$1 @$$1}
-@ ^{m {list 1 2 3}} {list a b c}
+@ mac m `{echo $1 $$1; echo @$1 @$$1}
+@ ^{m :{1 2 3}} :{a b c}
 (a b c) (1 2 3)
 a b c 1 2 3
 ```
@@ -250,7 +254,7 @@ condやcaseといったlispのマクロに渡す場合、引数はネイティ�
 yes
 yes
 yes
-@ loop for i in {list 1 2 3} collect $i -> echo
+@ loop for i in :{1 2 3} collect $i -> echo
 (1 2 3)
 ```
 
@@ -274,7 +278,7 @@ a
 ### ulist
 
 ```
-@ ulist {list 1 2 3} --> echo
+@ ulist :{1 2 3} --> echo
 1 2 3
 ```
 
@@ -358,9 +362,9 @@ hello
 a
 @ cons 1 2 -> echo
 (1 . 2)
-@ listp {list 1 2} -> echo
+@ listp :{1 2} -> echo
 T
-@ var a {list 1 2 3}
+@ var a :{1 2 3}
 @ car $a -> echo
 1
 @ rest $a -> echo
@@ -392,7 +396,7 @@ NIL
 (1)
 @ reduce + $a -> echo
 6
-@ remove-duplicates {list 1 1 2 3} -> echo
+@ remove-duplicates :{1 1 2 3} -> echo
 (1 2 3)
 @ reverse $a -> echo
 (3 2 1)
