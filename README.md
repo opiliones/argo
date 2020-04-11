@@ -19,40 +19,42 @@ argo \[-b BINARY-FILE] \[-c STRING|FILE]
 ### フィボナッチ数列
 
 ```
-fn fib (
-  le $1 2 && return 1
-  + (fib (- $1 1)) (fib (- $1 2))
-)
+fn fib {
+  lt $1 3 && return 1
+  fib {$1`-`1}`+ fib {$1`-`2}
+}
 
-fib (num $1) -> echo
+fib {num $1} -> echo
 ```
 
 ### Fizz Bazz
 
 ```
-seq 1 100 | loop (
-  read || return -> ^(
+seq 1 100 | loop {
+  read || return -> ^{
     let n (num $1)
-    (= 0 (mod $n 15)) &&& echo FizzBuzz
-    (= 0 (mod $n 3))  &&& echo Fizz
-    (= 0 (mod $n 5))  &&& echo Buzz
-    echo $1
-  )
-)
+    ^{
+       mod $n 15`= 0 =>: FizzBuzz
+       mod $n 3 `= 0 =>: Fizz
+       mod $n 5 `= 0 =>: Buzz
+       : $n
+    } -> echo
+  }
+}
 ```
 又は
 
 ```
-seq 1 100 | loop (
-  read || return -> ^(
-    let n (num $1)
-    echo (cond \
-      ((= 0 (mod $n 15)) FizzBuzz)\
-      ((= 0 (mod $n 3))  Fizz)\
-      ((= 0 (mod $n 5))  Buzz)\
-      (t $1))
-  )
-)
+seq 1 100 | loop {
+  read || return -> ^{
+    let n {num $1}
+    echo (COND
+      ({mod $n 15`= 0} FizzBuzz)
+      ({mod $n 3 `= 0} Fizz)
+      ({mod $n 5 `= 0} Buzz)
+      ($T $1))
+  }
+}
 ```
 
 ## shに似た機能
@@ -92,7 +94,7 @@ b
 @ echo a >> 1 a; cat < a
 a
 a
-@ (echo a; echo b > 2) > c > 2 1; cat < c
+@ {echo a; echo b > 2} > c > 2 1; cat < c
 a
 b
 ```
@@ -127,13 +129,13 @@ a
 ### 位置パラメータ
 
 ```
-@ ^(echo $2) a b c
+@ ^{echo $2} a b c
 b
-@ ^(echo $*) a b c
+@ ^{echo $*} a b c
 (a b c)
-@ ^(echo @$*) a b c
+@ ^{echo @$*} a b c
 a b c
-@ ^(shift; echo $2) a b c
+@ ^{shift; echo $2} a b c
 c
 ```
 
@@ -141,7 +143,7 @@ c
 ### スプライシング
 
 ```
-@ echo @(list a b c)
+@ echo @{list a b c}
 a b c
 ```
 
@@ -160,7 +162,7 @@ T 0
 @ var x 1
 @ echo $x
 1
-@ let x (list 1 2 3); cdr $x -> echo
+@ let x {list 1 2 3}; cdr $x -> echo
 (2 3)
 @ const y 1
 @ echo $y
@@ -172,7 +174,7 @@ T 0
 ### 関数
 
 ```
-@ fn f (echo hello $1)
+@ fn f {echo hello $1}
 @ f world
 hello  world
 ```
@@ -180,7 +182,7 @@ hello  world
 ### コマンド置換
 
 ```
-@ echo (echo a | read)
+@ echo {echo a | read}
 a
 ```
 
@@ -188,7 +190,7 @@ a
 
 ```
 @ mac m {echo $1 $$1; echo @$1 @$$1}
-@ ^(m (list 1 2 3)) (list a b c)
+@ ^{m {list 1 2 3}} {list a b c}
 (a b c) (1 2 3)
 a b c 1 2 3
 ```
@@ -198,7 +200,7 @@ a b c 1 2 3
 &でコマンドを接続した場合、並列実行し、両方のコマンドが終わるまで待ち合わせる。
 
 ```
-@ let x ((sleep 1; : 1) & : 2)
+@ let x {{sleep 1; : 1} & : 2}
 @ echo x
 (1 . 2)
 ```
@@ -209,39 +211,39 @@ a b c 1 2 3
 ### 条件分岐
 
 ```
-@ if true (echo a) (echo b)
+@ if true {echo a} {echo b}
 a
-@ if false (echo a) (echo b)
+@ if false {echo a} {echo b}
 b
-@ cond ((eq a b) (echo a)) ((eq b b) (echo b))
+@ cond {{eq a b} {echo a}} {{eq b b} {echo b}}
 b
-@ case 1 (0 (echo 0)) (1 (echo 1)) (2 (echo 2))
+@ case 1 {0 {echo 0}} {1 {echo 1}} {2 {echo 2}}
 1
 ```
 
 ### 繰り返し
 
 ```
-@ loop (echo yes) | head -n 3
+@ loop {echo yes} | head -n 3
 yes
 yes
 yes
-@ loop for i in (list 1 2 3) collect $i -> echo
+@ loop for i in {list 1 2 3} collect $i -> echo
 (1 2 3)
 ```
 
 ### 局所脱出
 
 ```
-@ block a (echo a; return-from a 0; echo b)
+@ block a {echo a; return-from a 0; echo b}
 a
 ```
 
 ### 大域脱出
 
 ```
-@ fn f (echo a; throw a; echo b)
-@ catch a (f)
+@ fn f {echo a; throw a; echo b}
+@ catch a {f}
 a
 ```
 
@@ -250,7 +252,7 @@ a
 ### ulist
 
 ```
-@ ulist (list 1 2 3) --> echo
+@ ulist {list 1 2 3} --> echo
 1 2 3
 ```
 
@@ -259,7 +261,7 @@ a
 ```
 @ dict a 1 b 2 -> idx a -> echo
 1
-@ let a (dict a 1 b 2); modf x b 4 c 3 -> udict -> echo
+@ let a {dict a 1 b 2}; modf x b 4 c 3 -> udict -> echo
 (a 1 b 4 c 3)
 @ dict a 1 b 2 -> rem a -> udict -> echo
 (b 2)
@@ -267,7 +269,7 @@ a
 ### tmpf
 
 ```
-@ tmpf ^(echo a > $1; cat $1)
+@ tmpf ^{echo a > $1; cat $1}
 a
 ```
 ### glob
@@ -279,7 +281,7 @@ a
 ### form
 
 ```
-@ echo (form '~~%' $PI)
+@ echo {form '~~%' $PI}
 
 ```
 
@@ -315,14 +317,14 @@ Hell0 W0rld
 ### num
 
 ```
-@ + (num "1") (num 1) -> echo
+@ + {num "1"} {num 1} -> echo
 2
 ```
 
 ### その他
 
 ```
-@ ^(echo $1; = 1 $1 && return; echo a) 1
+@ ^{echo $1; = 1 $1 && return; echo a} 1
 1
 @ values 1 2 --> echo
 1 2
@@ -330,13 +332,13 @@ Hell0 W0rld
 2 1
 @ format $T '~a~%' hello
 hello
-@ block $NIL (unwind-protect (return; echo b) (echo a))
+@ block $NIL {unwind-protect {return; echo b} {echo a}}
 a
 @ cons 1 2 -> echo
 (1 . 2)
-@ listp (list 1 2) -> echo
+@ listp {list 1 2} -> echo
 T
-@ var a (list 1 2 3)
+@ var a {list 1 2 3}
 @ car $a -> echo
 1
 @ rest $a -> echo
@@ -357,22 +359,22 @@ NIL
 (3)
 @ length $a -> echo
 3
-@ mapcar ^(echo $1; + 1 1) $a -> echo $a
+@ mapcar ^{echo $1; + 1 1} $a -> echo $a
 1
 2
 3
 (2 3 4)
-@ remove-if ^(= 1 $1) $a -> echo
+@ remove-if ^{= 1 $1} $a -> echo
 (2 3)
-@ remove-if-not ^(= 1 $1) $a -> echo
+@ remove-if-not ^{= 1 $1} $a -> echo
 (1)
 @ reduce + $a -> echo
 6
-@ remove-duplicates (list 1 1 2 3) -> echo
+@ remove-duplicates {list 1 1 2 3} -> echo
 (1 2 3)
 @ reverse $a -> echo
 (3 2 1)
-@ append $a (reverse $a) -> echo
+@ append $a {reverse $a} -> echo
 1 2 3 3 2 1
 @ eq a a -> echo
 T
@@ -384,14 +386,14 @@ T
 NIL
 @ equal $a $a -> echo
 T
-@ and (eql 1 1) a -> echo
+@ and {eql 1 1} a -> echo
 a
-@ or (eql "a" "a") a -> echo
+@ or {eql "a" "a"} a -> echo
 a
-@ when (eql 1 1) (echo a) (echo b)
+@ when {eql 1 1} {echo a} {echo b}
 a
 b
-@ unless (eql "a" "a") (echo a) (echo b)
+@ unless {eql "a" "a"} {echo a} {echo b}
 a
 b
 @ numberp 1 -> echo
@@ -400,11 +402,11 @@ T
 3
 @ min 2 1 3 -> echo
 1
-@ sin (/ $PI 2) -> echo
+@ sin {/ $PI 2} -> echo
 1.0d0
 @ cos $PI -> echo
 -1.0d0
-@ tan (/ $PI 4) -> echo
+@ tan {/ $PI 4} -> echo
 1.0d0
 @ exp 2 -> echo
 7.389056
@@ -416,13 +418,13 @@ T
 0.0
 @ abs -1 -> echo
 1
-@ conjugate (complex 1 1) -> echo
+@ conjugate {complex 1 1} -> echo
 #C(1 -1)
-@ phase (complex 1 1) -> echo
+@ phase {complex 1 1} -> echo
 0.7853982
 @ signum -2.0 -> echo
 -1.0
-@ cis (/ $PI 4) -> echo
+@ cis {/ $PI 4} -> echo
 #C(0.7071067811865476d0 0.7071067811865475d0)
 @ gcd 144 120 -> echo
 24
@@ -440,25 +442,25 @@ T
 4.0d0
 @ fround $PI -> echo
 3.0d0
-@ truncate (* -1 $PI) -> echo
+@ truncate {* -1 $PI} -> echo
 -3
-@ ftruncate (* -1 $PI) -> echo
+@ ftruncate {* -1 $PI} -> echo
 -3.0d0
 @ mod $PI 1 -> echo
 0.14159265358979312d0
-@ rem (* -1 $PI) 1 -> echo
+@ rem {* -1 $PI} 1 -> echo
 -0.14159265358979312d0
 @ float 1 -> echo
 1.0
 @ rational 0.99999999 -> echo
 1
-@ numerator (/ 3 12) -> echo
+@ numerator {/ 3 12} -> echo
 1
-@ denominator (/ 3 12) -> echo
+@ denominator {/ 3 12} -> echo
 4
-@ realpart (complex 1 1) -> echo
+@ realpart {complex 1 1} -> echo
 1
-@ imagpart (complex 1 1) -> echo
+@ imagpart {complex 1 1} -> echo
 1
 @ zerop 0 -> echo
 T
@@ -485,7 +487,7 @@ lo
 @ let a "Zeppo Marx"; replace $a "Harpo" :end1 5 -> echo
 @ concatenate STRING "hello" " " "world" -> echo
 hello world
-@ map STRING ^(echo $1; : $1) "hello"
+@ map STRING ^{echo $1; : $1} "hello"
 h
 e
 l
