@@ -365,12 +365,6 @@
   (eval `(import-funcs ,(mapcar #'eval xs)))
   `(list ,@xs))
 
-(defmacro |cond| (&rest xs)
-  `(cond ,@(mapcar #'cdr xs)))
-
-(defmacro |case| (x &rest xs)
-  `(case ,x ,@(mapcar #'cdr xs)))
-
 (defmacro |block| (x &rest xs)
   `(block ,(eval x) ,@xs))
 
@@ -396,7 +390,7 @@
   format unwind-protect
   list car cdr cons listp first rest second third fourth nth last length
   mapcar remove-if remove-if-not reduce remove-duplicates reverse append
-  eq eql equal and or when unless if
+  eq eql equal and or when unless if cond case
   numberp max min
   sin cos tan acos asin atan
   exp expt sqrt log
