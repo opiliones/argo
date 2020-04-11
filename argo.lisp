@@ -28,7 +28,8 @@
 " s))
 
 (my-define-string-lexer nsh-lexer
-  ((brank-and "#[^\\n]*") (return (values '|#| '|#|)))
+  ((brank-and "#![^\\n]*\\n") (return (values '|#| '|#|)))
+  ((brank-and "##[^\\n]*\\n") (return (values '|#| '|#|)))
   ((and-nl "{") (return (values '{ '{)))
   ((and-nl "\\^\\{") (return (values '|^{| '|^{|)))
   ((and-nl "`\\{") (return (values '|`{| '|`{|)))
@@ -44,19 +45,21 @@
   ((in-brank-nl "(>>|>|<)") (return (values '|>| (intern (trim-brank $@)))))
   ("\\$\\$[0-9]+" (return (values '$$* (read-from-string (subseq $@ 2)))))
   ("\\$[0-9]+" (return (values '$* (read-from-string (subseq $@ 1)))))
-  ("\\$\\$([^^{}() 	\\n#\\\\\"'`$&|<>;])+" (return (values '$$ (intern (subseq $@ 2)))))
+  ("\\$\\$([^^{}() 	\\n\\\\\"'`$&|<>;])+" (return (values '$$ (intern (subseq $@ 2)))))
   ("\\$@[0-9]+" (return (values '$@* (read-from-string (subseq $@ 2)))))
-  ("\\$@([^^{}() 	\\n#\\\\\"'`$&|<>;])+" (return (values '$@ (intern (subseq $@ 2)))))
-  ("\\$([^^{}() 	\\n#\\\\\"'`$&|<>;])+" (return (values '$ (intern (subseq $@ 1)))))
-  (":([^:^{}() 	\\n#\\\\\"'`$&|<>;])+" (return (values '$ (read-from-string $@))))
+  ("\\$@([^^{}() 	\\n\\\\\"'`$&|<>;])+" (return (values '$@ (intern (subseq $@ 2)))))
+  ("\\$([^^{}() 	\\n\\\\\"'`$&|<>;])+" (return (values '$ (intern (subseq $@ 1)))))
+  (":([^:^{}() 	\\n\\\\\"'`$&|<>;])+" (return (values '$ (read-from-string $@))))
+  ("#([^:^{}() 	\\n\\\\\"'`$&|<>;])+" (return (values '$ (read-from-string $@))))
   ("\\^" (return (values '^ '^)))
   ((brank-and "@") (return (values '@ '@)))
-  ((in-brank-nl "`[^ 	\\n]+") (return (values '|`| (intern (subseq (trim-brank $@) 1)))))
+  ((in-brank-nl "`[^ 	\\n`]+`") (return (values '|``| (intern (subseq (trim-brank $@) 1 (- (length $@) 1))))))
+  ((in-brank-nl "`[^ 	\\n`]+") (return (values '|`| (intern (subseq (trim-brank $@) 1)))))
   ("(\\\\\\n|[ 	])+" (return (values 'brank  'brank)))
   ("\"([^\\\\\"]|\\\\.)*\"" (return (values 'string (read-from-string $@))))
   ("'([^']|'')*'" (return (values 'string (regex-replace-all "''" (subseq $@ 1 (- (length $@) 1)) "'"))))
   ("-?(0|[1-9][0-9]*)(\\.[0-9]*)?([e|E][+-]?[0-9]+)?" (return (values 'number (read-from-string $@))))
-  ("([^^{}() 	\\n#\\\\\"`'$&|<>;]|\\\\.)+" (return (values 'symbol (intern (parse-escape $@)))))
+  ("([^^{}() 	\\n\\\\\"`'$&|<>;]|\\\\.)+" (return (values 'symbol (intern (parse-escape $@)))))
 )
 
 (defun parse-escape (s)
@@ -78,7 +81,6 @@
 (defvar *bq* (car '`,()))
 (defvar *exit* #'(lambda () ()))
 (defvar *symbol-string-func* '(+ - / * = /=))
-(defvar *buf* (make-string 80))
 (defconstant @ '@)
 
 (defun infix (l m r)
@@ -91,8 +93,8 @@
 
 (define-parser nsh-parser
   (:start-symbol nsh)
-  (:terminals (symbol brank string number |$| |$$| |$@| |$@*| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |`| |=>| |->| |{| |:{| |`{| |^{| |}| |;| |#|))
-  (:precedence ((:right |#|) (:right |^|) (:right |@|) (:left |>|)
+  (:terminals (symbol brank string number |$| |$$| |$@| |$@*| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |`| |``| |=>| |->| |{| |:{| |`{| |^{| |}| |;| |#|))
+  (:precedence ((:right |#|) (:right |^|) (:left |``|) (:right |@|) (:left |>|)
                 (:left |`|) (:right |&|) (:right |&&|) (:left |->|) (:left |=>|) (:right |;|)))
 
   (nsh
@@ -112,6 +114,7 @@
     (|$*| #'(lambda (n) `(nth ,(- n 1) *)))
     (|$$*| #'(lambda (n) (asta-comma (- n 1))))
     (|{| nsh |}| #'(lambda (l nsh r) nsh))
+    (|(| lisp-cmd |)| #'(lambda (l nsh r) nsh))
     (|`{| nsh |}| #'(lambda (l nsh r) `(,*bq* ,nsh)))
     (|^{| nsh |}| #'(lambda (l nsh r) `#'(lambda (&rest |*|) (block nil ,nsh))))
   )
@@ -124,6 +127,18 @@
   (term
     word
     words
+  )
+
+  (lisp-cmd
+    (lisp-terms #'(lambda (xs)
+                  (cons (let ((x (car xs)))
+                          (if (and (listp x) (eq 'quote (car x))) (eval x) x))
+                        (cdr xs))))
+  )
+
+  (lisp-terms
+    terms
+    (terms |;| lisp-terms #'(lambda (l _ r) (append l r)))
   )
 
   (command
@@ -144,6 +159,7 @@
     (|@| terms #'cons)
     (term |@| #'list)
     (term |@| terms #'(lambda (l _ r) `(,l |@| ,@r)))
+    (term |``| term #'(lambda (l f r) `(',f ,l ,r)))
     (term #'list)
   )
 )
@@ -406,6 +422,7 @@
 
 (import-func string< |string-lt|)
 (import-func string> |string-gt|)
+(import-func length |len|)
 
 (defmacro |var| (x y) `(defvar ,(eval x) ,y))
 (defmacro |~| (x y) `(all-matches-as-strings (princ-to-string ,x) (princ-to-string ,y))) 
