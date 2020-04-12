@@ -76,12 +76,12 @@ c
 エラーコードは２番目の戻り値です。
 
 ```
-@ let stat errno ls -1; echo $stat $errno
+@ let stat errno {ls -1}; echo $stat $errno
 a
 b
 c
 T 0
-@ let stat errno /bin/false; echo $stat $errno
+@ let stat errno {/bin/false}; echo $stat $errno
 NIL 1
 ```
 
@@ -96,7 +96,7 @@ b
 @ echo a >> 1 a; cat < a
 a
 a
-@ {echo a; echo b > 2} > c > 2 1; cat < c
+@ {echo a; echo b > 2} > 2 1 > c; cat < c
 a
 b
 ```
@@ -156,9 +156,9 @@ a b c
 ### パイプ演算子
 
 ```
-@ /bin/: -> echo
+@ /bin/true -> echo
 T
-@ /bin/: --> echo
+@ /bin/true --> echo
 T 0
 ```
 
