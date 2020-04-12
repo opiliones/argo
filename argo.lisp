@@ -28,8 +28,8 @@
 " s))
 
 (my-define-string-lexer nsh-lexer
-  ((brank-and "#![^\\n]*\\n") (return (values '|#| '|#|)))
-  ((brank-and "##[^\\n]*\\n") (return (values '|#| '|#|)))
+  ("^#![^\\n]*" (return (values '|#| '|#|)))
+  ((nl-and "##[^\\n]*") (return (values '|#| '|#|)))
   ((and-nl "{") (return (values '{ '{)))
   ((and-nl "\\^\\{") (return (values '|^{| '|^{|)))
   ((and-nl "`\\{") (return (values '|`{| '|`{|)))
@@ -94,12 +94,14 @@
 (define-parser nsh-parser
   (:start-symbol nsh)
   (:terminals (symbol brank string number |$| |$$| |$@| |$@*| |$*| |$$*| |(| |)| |@| |^| |>| |&| |&&| |`| |``| |=>| |->| |{| |:{| |`{| |^{| |}| |;| |#|))
-  (:precedence ((:right |#|) (:right |^|) (:left |``|) (:right |@|) (:left |>|)
-                (:left |`|) (:right |&|) (:right |&&|) (:left |->|) (:left |=>|) (:right |;|)))
+  (:precedence ((:right |^|) (:left |``|) (:right |@|) (:left |>|) (right |#|)
+                (:left |`|) (:right |&|) (:left |&&|) (:left |->|) (:left |=>|) (:right |;|)))
 
   (nsh
     nil
     command
+    (|#| nsh #'(lambda (l r) r))
+    (|#| |;| nsh #'(lambda (l _ r) r))
   )
 
   (word
@@ -143,8 +145,6 @@
 
   (command
     (terms #'(lambda (x) `(| | ,@x)))
-    (command |#| #'(lambda (x _) x))
-    (|#| command #'(lambda (_ x) x))
     (command |&| command #'infix)
     (command |`| command #'infix)
     (command |&&| command #'infix)
@@ -152,6 +152,7 @@
     (command |=>| command #'infix)
     (command |;| command #'infix)
     (command |>| command #'infix)
+    (command |#| #'(lambda (l _) l))
   )
 
   (terms
@@ -222,7 +223,10 @@
 (defmacro |\|| (x y)
   (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym)) (r (gensym)) (w (gensym))) 
     `(multiple-value-bind (,r ,w) (sb-unix:unix-pipe)
-        (let* ((,thd (bordeaux-threads:make-thread
+        (let* ((bordeaux-threads:*default-special-bindings*
+                 `((*standard-input* . ,*standard-input*)
+                   (*standard-input-overloaded* . ,*standard-input-overloaded*)))
+               (,thd (bordeaux-threads:make-thread
                        #'(lambda ()
                            (let ((*standard-output*
                                    (sb-sys:make-fd-stream ,w :output t)))
@@ -562,7 +566,7 @@
 
 (defun print-eval (p)
   (handler-bind ((warning (lambda (x) (muffle-warning x))))
-    (when nil
+    (when t;nil
       (print p)
       (princ #\newline)
       (print (sb-cltl2:macroexpand-all p))
