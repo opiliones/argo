@@ -7,10 +7,12 @@ Common Lisp(SBCL)で作られたsh風の言語です。
 できるだけCLの文法に寄せているのでposix互換ではありません。
 
 ## オプション
+argo.lisp \[-b BINARY-FILE] \[-c STRING|FILE] \[-x]
 argo \[-b BINARY-FILE] \[-c STRING|FILE]
 
 * bオプション: cオプション引数又はFILEのコードをコンパイルしてBINARY-FILEを作成します。
 * cオプション: STRINGを実行します。
+* xオプション: argo自身のバイナリを作成します。
 
 引数を指定しない場合はREPLが起動します。
 
@@ -74,12 +76,12 @@ c
 エラーコードは２番目の戻り値です。
 
 ```
-@ let stat errno ls -1; echo $stat $errno
+@ let stat errno {ls -1}; echo $stat $errno
 a
 b
 c
 T 0
-@ let stat errno /bin/false; echo $stat $errno
+@ let stat errno {/bin/false}; echo $stat $errno
 NIL 1
 ```
 
@@ -94,7 +96,7 @@ b
 @ echo a >> 1 a; cat < a
 a
 a
-@ {echo a; echo b > 2} > c > 2 1; cat < c
+@ {echo a; echo b > 2} > 2 1 > c; cat < c
 a
 b
 ```
@@ -149,14 +151,14 @@ c
 a b c
 ```
 
-なお、`:{...}`は`{list ...}`の省記である。
+なお、`:{...}`は`{list ...}`の省記です。
 
 ### パイプ演算子
 
 ```
-@ /bin/: -> echo
+@ /bin/true -> echo
 T
-@ /bin/: --> echo
+@ /bin/true --> echo
 T 0
 ```
 
@@ -201,7 +203,7 @@ a b c 1 2 3
 
 ### スレッド
 
-&でコマンドを接続した場合、並列実行し、両方のコマンドが終わるまで待ち合わせる。
+&でコマンドを接続した場合、並列実行し、両方のコマンドが終わるまで待ち合わせます。
 
 ```
 @ let x {{sleep 1; : 1} & : 2}
@@ -212,7 +214,7 @@ a b c 1 2 3
 ### 中置演算子
 
 任意の演算子について、\`をつけるとコマンド同士を接続する中置演算子、
-\`で囲むと値を引数に取る中置演算子だと認識する。
+\`で囲むと値を引数に取る中置演算子だと認識します。
 
 ```
 @ true `when echo a
@@ -240,12 +242,12 @@ b
 1
 ```
 
-`()`で囲むと内部を以下のルールでパースする。
+`()`で囲むと内部を以下のルールでパースします。
 
 - リストの最初の項を関数又は値だとみなす
 - 改行を無視する
 
-condやcaseといったlispのマクロに渡す場合、引数はネイティブなlistである必要がある。
+condやcaseといったlispのマクロに渡す場合、引数はネイティブなlistである必要があります。
 
 ### 繰り返し
 
