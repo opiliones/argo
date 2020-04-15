@@ -54,7 +54,7 @@
   ("\\^" (return (values '^ '^)))
   ((brank-and "@") (return (values '@ '@)))
   ((in-brank-nl "`[^ 	\\n`]+`") (return (values '|``| (intern (subseq (trim-brank $@) 1 (- (length $@) 1))))))
-  ((in-brank-nl "`[^ 	\\n`]+") (return (values '|`| (intern (subseq (trim-brank $@) 1)))))
+  ((in-brank-nl "`[^ 	\\n{`]+") (return (values '|`| (intern (subseq (trim-brank $@) 1)))))
   ("(\\\\\\n|[ 	])+" (return (values 'brank  'brank)))
   ("\"([^\\\\\"]|\\\\.)*\"" (return (values 'string (read-from-string $@))))
   ("'([^']|'')*'" (return (values 'string (regex-replace-all "''" (subseq $@ 1 (- (length $@) 1)) "'"))))
@@ -80,6 +80,7 @@
 (defun asta-comma (n) (cadr ``,(nth ,n |*|)))
 (defvar *bq* (car '`,()))
 (defvar *exit* #'(lambda () ()))
+(defvar *pipe-policy* '|last|)
 (defvar *symbol-string-func* '(+ - / * = /=))
 (defconstant @ '@)
 
@@ -216,31 +217,42 @@
 
 (defmacro |&| (x y)
   (let ((thd (gensym)) (ret (gensym))) 
-    `(let ((,thd (bordeaux-threads:make-thread #'(lambda () ,x)))
-           (,ret ,y))
-        (cons (bordeaux-threads:join-thread ,thd) ,ret))))
+    `(let ((bordeaux-threads:*default-special-bindings*
+             `((*standard-input* . ,*standard-input*)
+               (*standard-input-overloaded* . ,*standard-input-overloaded*)
+               (*invoke-debugger-hook* . ,*invoke-debugger-hook*)))
+           (,thd (bordeaux-threads:make-thread #'(lambda () ,x)))
+           (,ret (multiple-value-list ,y)))
+        (cons (multiple-value-list (bordeaux-threads:join-thread ,thd)) ,ret))))
 
 (defmacro |\|| (x y)
   (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym)) (r (gensym)) (w (gensym))) 
     `(multiple-value-bind (,r ,w) (sb-unix:unix-pipe)
         (let* ((bordeaux-threads:*default-special-bindings*
                  `((*standard-input* . ,*standard-input*)
-                   (*standard-input-overloaded* . ,*standard-input-overloaded*)))
+                   (*standard-input-overloaded* . ,*standard-input-overloaded*)
+                   (*invoke-debugger-hook* . ,*invoke-debugger-hook*)))
                (,thd (bordeaux-threads:make-thread
-                       #'(lambda ()
+                       #'(lambda () (multiple-value-list
                            (let ((*standard-output*
                                    (sb-sys:make-fd-stream ,w :output t)))
-                             (unwind-protect (progn ,x))
+                             (unwind-protect ,x
                                (close *standard-output*)
-                               (sb-unix:unix-close ,w)))))
+                               (sb-unix:unix-close ,w)))))))
                (*standard-input-overloaded* t)
                (*standard-input*
                  (sb-sys:make-fd-stream ,r :input t))
-               (,ret1 (unwind-protect ,y
-                       (close *standard-input*)
-                       (sb-unix:unix-close ,r)))
+               (,ret1 (multiple-value-list
+                        (unwind-protect ,y
+                          (close *standard-input*)
+                          (sb-unix:unix-close ,r))))
                (,ret2 (bordeaux-threads:join-thread ,thd)))
-          (cons ,ret1 ,ret2)))))
+          (apply #'values
+            (case *pipe-policy*
+              ('|last|  ,ret1)
+              ('|right| (if (and (car ,ret1) (not (car ,ret2))) ,ret2 ,ret1 ))
+              ('|left|  (if (car ,ret2) ,ret1 ,ret2))
+              ('|cons|  (cons ,ret2 ,ret1))))))))
 
 (defmacro redirect-write (x y)
   (let ((ys (cdr y)))
@@ -453,6 +465,7 @@
       (| | ,@cmd ,f))))
 
 (defmacro |read| () `(read-line *standard-input* nil nil))
+(defmacro |read-all| () `(alexandria:read-stream-content-into-string *standard-input*))
 (defmacro |read-char| () `(read-char *standard-input* nil nil))
 
 (defun |cd| (p) (sb-posix:chdir (princ-to-string p)))
@@ -509,7 +522,9 @@
 
 (import-func concatenate |concat|)
 
-(defun |echo| (&rest xs) (format t "~{~A~^ ~}~%" xs) xs)
+(defun |echo| (&rest xs)
+  (let ((s (format nil "~{~A~^ ~}" xs)))
+    (format t (if (equal (elt s (- (length s) 1)) #\Newline) "~A" "~A~%") s)))
 
 (defun |num| (x)
   (if (numberp x) x
