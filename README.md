@@ -188,7 +188,7 @@ hello  world
 ### コマンド置換
 
 ```
-@ echo {echo a | read}
+@ echo {echo a | read-all}
 a
 ```
 
@@ -204,11 +204,11 @@ a b c 1 2 3
 ### スレッド
 
 &でコマンドを接続した場合、並列実行し、両方のコマンドが終わるまで待ち合わせます。
+戻り値は両コマンドの戻り地のリストをconsしたものです。
 
 ```
-@ let x {{sleep 1; : 1} & : 2}
-@ echo x
-(1 . 2)
+@ let x {{sleep 1} & sleep 2}; echo $x
+((T 0) T 0)
 ```
 
 ### 中置演算子
@@ -252,10 +252,13 @@ condやcaseといったlispのマクロに渡す場合、引数はネイティ�
 ### 繰り返し
 
 ```
-@ loop {echo yes} | head -n 3
+@ loop {echo yes}
 yes
 yes
 yes
+...
+```
+```
 @ loop for i in :{1 2 3} collect $i -> echo
 (1 2 3)
 ```
@@ -270,9 +273,10 @@ a
 ### 大域脱出
 
 ```
-@ fn f {echo a; throw a; echo b}
-@ catch a {f}
+@ fn f {echo a; throw a 1; echo b}
+@ catch a {f} -> echo
 a
+1
 ```
 
 ## 独自コマンド
@@ -289,15 +293,16 @@ a
 ```
 @ dict a 1 b 2 -> idx a -> echo
 1
-@ let a {dict a 1 b 2}; modf x b 4 c 3 -> udict -> echo
+@ let x {dict a 1 b 2}; modf $x b 4 c 3 -> udict -> echo
 (a 1 b 4 c 3)
 @ dict a 1 b 2 -> rem a -> udict -> echo
 (b 2)
 ```
 ### tmpf
+一時的なストリームを与えられた関数の第一引数に与える。
 
 ```
-@ tmpf ^{echo a > $1; cat $1}
+@ tmpf ^{echo a > $1; cat < $1}
 a
 ```
 ### glob
@@ -309,8 +314,8 @@ a
 ### form
 
 ```
-@ echo {form '~~%' $PI}
-
+@ echo {form "~16,8f~%" $PI}
+      3.14159265
 ```
 
 ### true / false / :
@@ -329,9 +334,9 @@ NIL 1
 ```
 @ sep " a  b c 12  " -> echo
 (a b c 12)
-@ seq " "  " a  b c 12  " -> echo
+@ sep " "  " a  b c 12  " -> echo
 ( a  b c 12)
-@ seq " "  " a  b c 12  " -> usep , -> echo
+@ sep " "  " a  b c 12  " -> usep , -> echo
 ,a,,b,c,12 
 ```
 
@@ -356,7 +361,7 @@ Hell0 W0rld
 1
 @ values 1 2 --> echo
 1 2
-@ let a 1; eval {let a 2; echo $a $$a}
+@ let a 1; eval `{let a 2; echo $a $$a}
 2 1
 @ format $T '~a~%' hello
 hello
