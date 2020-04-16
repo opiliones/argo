@@ -218,16 +218,16 @@
 
 (defmacro |&| (x y)
   (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym))) 
-    `(let ((bordeaux-threads:*default-special-bindings*
-             `((*standard-input* . ,*standard-input*)
-               (*standard-input-overloaded* . ,*standard-input-overloaded*)
-               (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
-              ))
-           (,thd (bordeaux-threads:make-thread #'(lambda () (block nil
-                   (handler-bind ((error #'(lambda (c) (return nil))))
-                     ,x)))))
-           (,ret1 (multiple-value-list ,y))
-           (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
+    `(let* ((bordeaux-threads:*default-special-bindings*
+              `((*standard-input* . ,*standard-input*)
+                (*standard-input-overloaded* . ,*standard-input-overloaded*)
+                (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
+               ))
+            (,thd (bordeaux-threads:make-thread #'(lambda () (block nil
+                    (handler-bind ((error #'(lambda (c) (return nil))))
+                      ,x)))))
+            (,ret1 (multiple-value-list ,y))
+            (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
       (apply #'values
         (case *para-policy*
           ('|last|  ,ret1)
