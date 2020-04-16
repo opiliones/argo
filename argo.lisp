@@ -81,6 +81,7 @@
 (defvar *bq* (car '`,()))
 (defvar *exit* #'(lambda () ()))
 (defvar *pipe-policy* '|last|)
+(defvar *para-policy* '|last|)
 (defvar *symbol-string-func* '(+ - / * = /=))
 (defconstant @ '@)
 
@@ -216,7 +217,7 @@
       (t `(progn ,x ,y)))))
 
 (defmacro |&| (x y)
-  (let ((thd (gensym)) (ret (gensym))) 
+  (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym))) 
     `(let ((bordeaux-threads:*default-special-bindings*
              `((*standard-input* . ,*standard-input*)
                (*standard-input-overloaded* . ,*standard-input-overloaded*)
@@ -225,8 +226,14 @@
            (,thd (bordeaux-threads:make-thread #'(lambda () (block nil
                    (handler-bind ((error #'(lambda (c) (return nil))))
                      ,x)))))
-           (,ret (multiple-value-list ,y)))
-        (cons (multiple-value-list (bordeaux-threads:join-thread ,thd)) ,ret))))
+           (,ret1 (multiple-value-list ,y))
+           (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
+      (apply #'values
+        (case *pipe-policy*
+          ('|last|  ,ret1)
+          ('|right| (if (and (car ,ret1) (not (car ,ret2))) ,ret2 ,ret1 ))
+          ('|left|  (if (car ,ret2) ,ret1 ,ret2))
+          ('|cons|  (cons ,ret2 ,ret1)))))))
 
 (defmacro |\|| (x y)
   (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym)) (r (gensym)) (w (gensym))) 
