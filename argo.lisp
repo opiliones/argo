@@ -220,8 +220,11 @@
     `(let ((bordeaux-threads:*default-special-bindings*
              `((*standard-input* . ,*standard-input*)
                (*standard-input-overloaded* . ,*standard-input-overloaded*)
-               (*invoke-debugger-hook* . ,*invoke-debugger-hook*)))
-           (,thd (bordeaux-threads:make-thread #'(lambda () ,x)))
+               (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
+              ))
+           (,thd (bordeaux-threads:make-thread #'(lambda () (block nil
+                   (handler-bind ((error #'(lambda (c) (return nil))))
+                     ,x)))))
            (,ret (multiple-value-list ,y)))
         (cons (multiple-value-list (bordeaux-threads:join-thread ,thd)) ,ret))))
 
@@ -231,14 +234,17 @@
         (let* ((bordeaux-threads:*default-special-bindings*
                  `((*standard-input* . ,*standard-input*)
                    (*standard-input-overloaded* . ,*standard-input-overloaded*)
-                   (*invoke-debugger-hook* . ,*invoke-debugger-hook*)))
+                   (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
+                  ))
                (,thd (bordeaux-threads:make-thread
-                       #'(lambda () (multiple-value-list
+                       #'(lambda () (block nil
                            (let ((*standard-output*
                                    (sb-sys:make-fd-stream ,w :output t)))
-                             (unwind-protect ,x
-                               (close *standard-output*)
-                               (sb-unix:unix-close ,w)))))))
+                             (handler-bind
+                               ((error #'(lambda (c) (return nil))))
+                               (unwind-protect ,x
+                                 (close *standard-output*)
+                                 (sb-unix:unix-close ,w))))))))
                (*standard-input-overloaded* t)
                (*standard-input*
                  (sb-sys:make-fd-stream ,r :input t))
@@ -246,7 +252,7 @@
                         (unwind-protect ,y
                           (close *standard-input*)
                           (sb-unix:unix-close ,r))))
-               (,ret2 (bordeaux-threads:join-thread ,thd)))
+               (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
           (apply #'values
             (case *pipe-policy*
               ('|last|  ,ret1)
@@ -403,7 +409,7 @@
   return values
   eval
   throw catch
-  format unwind-protect
+  format unwind-protect princ-to-string
   list car cdr cons listp first rest second third fourth nth last length
   mapcar remove-if remove-if-not reduce remove-duplicates reverse append
   eq eql equal and or when unless if cond case
@@ -521,10 +527,11 @@
 (import-func >= |ge|)
 
 (import-func concatenate |concat|)
+(import-func princ-to-string |str|)
 
 (defun |echo| (&rest xs)
   (let ((s (format nil "~{~A~^ ~}" xs)))
-    (format t (if (equal (elt s (- (length s) 1)) #\Newline) "~A" "~A~%") s)))
+    (format t (if (and xs (equal (elt s (- (length s) 1)) #\Newline)) "~A" "~A~%") s)))
 
 (defun |num| (x)
   (if (numberp x) x
@@ -532,12 +539,12 @@
         (if (numberp n) n x))))
 
 (defun repl ()
-  (kmrcl:set-signal-handler 2 (lambda (&rest _) ()))
   (tagbody retry
+    (kmrcl:set-signal-handler 2 #'(lambda (&rest _) (go retry)))
     (handler-bind
-      ((end-of-file (lambda (c) (sb-ext:quit :recklessly-p t))) 
-       (error (lambda (c) (format *error-output* "~A~%" c)
-                          (go retry))))
+      ((end-of-file #'(lambda (c) (sb-ext:quit :recklessly-p t)))
+       (error #'(lambda (c) (format *error-output* "~A~%" c)
+                            (go retry))))
       (loop (format t "@ ")
             (force-output)
             (print-eval (|parse| (read-line)))))))
@@ -581,7 +588,7 @@
 
 (defun print-eval (p)
   (handler-bind ((warning (lambda (x) (muffle-warning x))))
-    (when t;nil
+    (when nil
       (print p)
       (princ #\newline)
       (print (sb-cltl2:macroexpand-all p))
