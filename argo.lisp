@@ -229,7 +229,7 @@
            (,ret1 (multiple-value-list ,y))
            (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
       (apply #'values
-        (case *pipe-policy*
+        (case *para-policy*
           ('|last|  ,ret1)
           ('|right| (if (and (car ,ret1) (not (car ,ret2))) ,ret2 ,ret1 ))
           ('|left|  (if (car ,ret2) ,ret1 ,ret2))
