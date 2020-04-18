@@ -449,7 +449,8 @@
 
 (defmacro |var| (x y) `(defvar ,(eval x) ,y))
 (defmacro |~| (x y) `(all-matches-as-strings (princ-to-string ,x) (princ-to-string ,y))) 
-(defmacro |sub| (x y z) `(regex-replace-all (princ-to-string ,x) (princ-to-string ,z) (princ-to-string ,y)))
+(defmacro |sub| (x y z) `(regex-replace (princ-to-string ,x) (princ-to-string ,z) (princ-to-string ,y)))
+(defmacro |gsub| (x y z) `(regex-replace-all (princ-to-string ,x) (princ-to-string ,z) (princ-to-string ,y)))
 (defun |ulist| (&rest xs) (apply #'values (reduce #'append xs)))
 (defun |sep| (x &optional y)
   (if y (split (princ-to-string x) y)
@@ -538,7 +539,8 @@
 
 (defun |echo| (&rest xs)
   (let ((s (format nil "~{~A~^ ~}" xs)))
-    (format t (if (and xs (equal (elt s (- (length s) 1)) #\Newline)) "~A" "~A~%") s)))
+    (format t (if (and xs (equal (elt s (- (length s) 1)) #\Newline)) "~A" "~A~%") s))
+  (apply #'values xs))
 
 (defun |num| (x)
   (if (numberp x) x
