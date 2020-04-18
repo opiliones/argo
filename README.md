@@ -7,7 +7,7 @@ Common Lisp(SBCL)で作られたsh風の言語です。
 posix互換ではありません。
 
 ## オプション
-argo.lisp \[-b BINARY-FILE] \[-c STRING|FILE] \[-x]
+argo.lisp \[-b BINARY-FILE] \[-c STRING|FILE] \[-x]  
 argo \[-b BINARY-FILE] \[-c STRING|FILE]
 
 * bオプション: cオプション引数又はFILEのコードをコンパイルしてBINARY-FILEを作成します。
