@@ -340,10 +340,12 @@ NIL 1
 ,a,,b,c,12 
 ```
 
-### sub
+### sub / gsub
 
 ```
 @ sub o 0 "Hello World" -> echo
+Hell0 World
+@ gsub o 0 "Hello World" -> echo
 Hell0 W0rld
 ```
 
