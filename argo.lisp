@@ -29,7 +29,7 @@
 
 (my-define-string-lexer nsh-lexer
   ("^#![^\\n]*" (return (values '|#| '|#|)))
-  ((nl-and "#[  ][^\\n]*") (return (values '|#| '|#|)))
+  ((nl-and "#[# 	][^\\n]*") (return (values '|#| '|#|)))
   ((and-nl "{") (return (values '{ '{)))
   ((and-nl "\\^\\{") (return (values '|^{| '|^{|)))
   ((and-nl "`\\{") (return (values '|`{| '|`{|)))
