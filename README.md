@@ -7,7 +7,7 @@ Common Lisp(SBCL)で作られたsh風の言語です。
 posix互換ではありません。
 
 ## オプション
-argo.lisp \[-b BINARY-FILE] \[-c STRING|FILE] \[-x]
+argo.lisp \[-b BINARY-FILE] \[-c STRING|FILE] \[-x]  
 argo \[-b BINARY-FILE] \[-c STRING|FILE]
 
 * bオプション: cオプション引数又はFILEのコードをコンパイルしてBINARY-FILEを作成します。
@@ -50,7 +50,7 @@ seq 1 100 | loop {
 seq 1 100 | loop {
   read || return -> ^{
     let n {num $1}
-    echo (COND
+    echo (cond
       ({mod $n 15`= 0} FizzBuzz)
       ({mod $n 3 `= 0} Fizz)
       ({mod $n 5 `= 0} Buzz)
@@ -366,7 +366,7 @@ Hell0 W0rld
 2
 ```
 
-### その他
+## その他
 
 ```
 @ ^{echo $1; = 1 $1 && return; echo a} 1
