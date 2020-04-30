@@ -478,6 +478,9 @@
     `(with-open-temporary-file (,f :direction :io)
       (| | ,@cmd ,f))))
 
+(defmacro |time| (&rest cmd)
+  `(time (| | ,@cmd)))
+
 (defmacro |read| () `(read-line *standard-input* nil nil))
 (defmacro |read-all| () `(alexandria:read-stream-content-into-string *standard-input*))
 (defmacro |read-char| () `(read-char *standard-input* nil nil))
