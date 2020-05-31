@@ -612,7 +612,7 @@
       (cond
         (errors (format t "Usage: ~a [-b FILE] {-c CODE|FILE}~%" (car (uiop:command-line-arguments))))
         ((assoc "x" out-opts :test #'string=)
-          (let ((uiop:*image-entry-point* #'main)) (uiop:dump-image "argo" :executable t) (uiop:quit)))
+          #+sbcl (sb-ext:save-lisp-and-die "argo" :toplevel #'main :executable t :purify t))
         ((and (null out-opts) (null out-args)) (repl))
         (t (let* ((code (cdr (assoc "c" out-opts :test #'string=)))
                   (ast (if code
