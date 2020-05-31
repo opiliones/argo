@@ -5,10 +5,10 @@
         (make-pathname :name ".sbclrc")
         (user-homedir-pathname)))
 
-(ql:quickload '(:yacc :cl-lex :cl-ppcre :sb-cltl2 :bordeaux-threads :kmrcl :sb-posix :getopt :alexandria :cl-fad) :silent t)
+(ql:quickload '(:yacc :cl-lex :cl-ppcre :bordeaux-threads :kmrcl :getopt :alexandria :cl-fad :cffi :uiop #+sbcl :sb-cltl2) :silent t)
 
 (defpackage :cl-nsh
-  (:use :cl :yacc :cl-lex :cl-ppcre :sb-ext :sb-cltl2 :cl-fad) (:export))
+  (:use :cl :yacc :cl-lex :cl-ppcre :cl-fad) (:export))
 
 (in-package :cl-nsh)
 
@@ -199,13 +199,14 @@
 
 (defvar *standard-input-overloaded* nil)
 (defun standard-input ()
-  (if *standard-input-overloaded* *standard-input* t)) 
+  (if *standard-input-overloaded* *standard-input* :interactive)) 
 
-(defun cmd (cmd &rest args)
-  (let ((x (sb-ext:process-exit-code (sb-ext:run-program
-             (princ-to-string cmd) (mapcar #'princ-to-string args)
-             :output *standard-output* :input (standard-input) :search t))))
-    (values (eq x 0) x)))
+(defun cmd (&rest cmd)
+  (multiple-value-bind (out err ecode)
+    (uiop:run-program (mapcar #'princ-to-string cmd)
+      :output *standard-output* :input (standard-input)
+      :ignore-error-status t :search t)
+    (values (eq ecode 0) ecode)))
 
 (defun |init| (xs)
   (if (null (cdr xs)) nil (cons (car xs) (|init| (cdr xs)))))
@@ -221,7 +222,7 @@
     `(let* ((bordeaux-threads:*default-special-bindings*
               `((*standard-input* . ,*standard-input*)
                 (*standard-input-overloaded* . ,*standard-input-overloaded*)
-                (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
+;                (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
                ))
             (,thd (bordeaux-threads:make-thread #'(lambda () (block nil
                     (handler-bind ((error #'(lambda (c) (return nil))))
@@ -236,29 +237,24 @@
           ('|cons|  (cons ,ret2 ,ret1)))))))
 
 (defmacro |\|| (x y)
-  (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym)) (r (gensym)) (w (gensym))) 
-    `(multiple-value-bind (,r ,w) (sb-unix:unix-pipe)
+  (let ((thd (gensym)) (ret1 (gensym)) (ret2 (gensym))
+        (r (gensym)) (w (gensym)) (rf (gensym)) (wf (gensym))) 
+    `(multiple-value-bind (,r ,w ,rf ,wf) (make-pipe)
         (let* ((bordeaux-threads:*default-special-bindings*
-                 `((*standard-input* . ,*standard-input*)
+                 `((*standard-output* . ,,w)
+                   (*standard-input* . ,*standard-input*)
                    (*standard-input-overloaded* . ,*standard-input-overloaded*)
-                   (*invoke-debugger-hook* . ,*invoke-debugger-hook*)
                   ))
                (,thd (bordeaux-threads:make-thread
-                       #'(lambda () (block nil
-                           (let ((*standard-output*
-                                   (sb-sys:make-fd-stream ,w :output t)))
-                             (handler-bind
-                               ((error #'(lambda (c) (return nil))))
-                               (unwind-protect ,x
-                                 (close *standard-output*)
-                                 (sb-unix:unix-close ,w))))))))
+                       #'(lambda ()
+                           (with-err-handle
+                             (unwind-protect ,x
+                               (close-pipe ,w ,wf))))))
                (*standard-input-overloaded* t)
-               (*standard-input*
-                 (sb-sys:make-fd-stream ,r :input t))
+               (*standard-input* ,r)
                (,ret1 (multiple-value-list
                         (unwind-protect ,y
-                          (close *standard-input*)
-                          (sb-unix:unix-close ,r))))
+                          (close-pipe ,r ,rf))))
                (,ret2 (multiple-value-list (bordeaux-threads:join-thread ,thd))))
           (apply #'values
             (case *pipe-policy*
@@ -266,6 +262,29 @@
               ('|right| (if (and (car ,ret1) (not (car ,ret2))) ,ret2 ,ret1 ))
               ('|left|  (if (car ,ret2) ,ret1 ,ret2))
               ('|cons|  (cons ,ret2 ,ret1))))))))
+
+(defun make-pipe ()
+  #+allegro (excl:make-pipe-stream)
+  #+clisp (multiple-value-bind (err p) (LINUX:pipe)
+            (unless (zerop err) (error "failed to make pipe"))
+            (values (ext:make-stream (aref p 0) :direction :input)
+                    (ext:make-stream (aref p 1) :direction :output)
+                    (aref p 0) (aref p 1)))
+  #+clozure (multiple-value-bind (r w) (ccl::pipe)
+              (values (ccl::make-fd-stream r :direction :input)
+                      (ccl::make-fd-stream w :direction :output)
+                      r w))
+  #+sbcl (multiple-value-bind (r w) (sb-posix:pipe)
+           (values (sb-sys:make-fd-stream r :input t)
+                   (sb-sys:make-fd-stream w :output t)
+                   r w))
+)
+
+(defun close-pipe (s fd)
+  (close s)
+  #+clozure (ccl::fd-close fd)
+  #+sbcl (sb-unix:unix-close fd)
+)
 
 (defmacro redirect-write (x y)
   (let ((ys (cdr y)))
@@ -332,7 +351,9 @@
            (kmrcl:set-signal-handler i f)))))
 
 (defun |fork| (&rest xs)
-  (if (zerop (sb-posix:fork)) (cmdcall xs) t))
+  #+sbcl (let ((pid (sb-posix:fork)))
+           (if (= 0 pid) (cmdcall xs) pid))
+)
 
 (defmacro |\|\|| (x y)
   (let ((f (cadr x)))
@@ -401,7 +422,7 @@
   `(return-from ,(eval x) ,xs))
 
 (defmacro |exit| (&optional (n 0))
-  `(exit :code (|num| ,n)))
+  `(uiop:quit (|num| ,n)))
 
 (defmacro |ecode| (&rest xs)
   (let ((x (gensym)) (v (gensym)))
@@ -485,7 +506,7 @@
 (defmacro |read-all| () `(alexandria:read-stream-content-into-string *standard-input*))
 (defmacro |read-char| () `(read-char *standard-input* nil nil))
 
-(defun |cd| (p) (sb-posix:chdir (princ-to-string p)))
+(defun |cd| (p) (uiop:chdir (princ-to-string p)))
 (defun |getenv| (v) (posix-getenv (princ-to-string v)))
 
 (defmacro |loop| (&rest xs)
@@ -554,7 +575,7 @@
   (tagbody retry
     (kmrcl:set-signal-handler 2 #'(lambda (&rest _) (go retry)))
     (handler-bind
-      ((end-of-file #'(lambda (c) (sb-ext:quit :recklessly-p t)))
+      ((end-of-file #'(lambda (c) (uiop:quit)))
        (error #'(lambda (c) (format *error-output* "~A~%" c)
                             (go retry))))
       (loop (format t "@ ")
@@ -563,7 +584,7 @@
 
 (defun build (file code)
   (eval `(defun argo-main ()
-           (let ((|*| (cdr sb-ext:*posix-argv*)))
+           (let ((|*| (uiop:command-line-arguments)))
              (unwind-protect ,code (funcall *exit*)))))
   (save-lisp-and-die file :toplevel #'argo-main :executable t :purify t))
 
@@ -574,36 +595,41 @@
   (parse-with-lexer (nsh-lexer (string-trim " 	
 ;" code)) nsh-parser))
 
+(defmacro with-err-handle (&rest xs)
+  `(kmrcl:set-signal-handler 2 #'(lambda (&rest _) (uiop:quit 130)))
+  `(block nil
+     (handler-bind
+      ((end-of-file #'(lambda (c) (uiop:quit)))
+       (error #'(lambda (c) (format *error-output* "~A~%" c)
+                            (return nil))))
+      ,@xs)))
+
 (defun main ()
   (in-package :cl-nsh)
-  (setf sb-ext:*invoke-debugger-hook*  
-        (lambda (condition hook)
-          (declare (ignore hook))
-          (format *error-output* "~A~%" condition)
-          (sb-ext:quit :recklessly-p t)
-  ))
-  (multiple-value-bind (out-args out-opts errors)
-    (getopt:getopt (cdr sb-ext:*posix-argv*) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
-    (cond
-      (errors (format t "Usage: ~a [-b FILE] {-c CODE|FILE}~%" (car sb-ext:*posix-argv*)))
-      ((assoc "x" out-opts :test #'string=)
-        (save-lisp-and-die "argo" :toplevel #'main :executable t :purify t))
-      ((and (null out-opts) (null out-args)) (repl))
-      (t (let* ((code (cdr (assoc "c" out-opts :test #'string=)))
-                (ast (if code
-                       (|parse| code)
-                       (parse-file (car out-args))))
-                (|*| (if code out-args (cdr out-args)))
-                (build (cdr (assoc "b" out-opts :test #'string=))))
-           (if build (build build ast)
-                     (print-eval ast)))))))
+  (with-err-handle
+    (multiple-value-bind (out-args out-opts errors)
+      (getopt:getopt (uiop:command-line-arguments) '(("c" :REQUIRED) ("b" :REQUIRED) ("x" :NONE)))
+      (cond
+        (errors (format t "Usage: ~a [-b FILE] {-c CODE|FILE}~%" (car (uiop:command-line-arguments))))
+        ((assoc "x" out-opts :test #'string=)
+          (let ((uiop:*image-entry-point* #'main)) (uiop:dump-image "argo" :executable t) (uiop:quit)))
+        ((and (null out-opts) (null out-args)) (repl))
+        (t (let* ((code (cdr (assoc "c" out-opts :test #'string=)))
+                  (ast (if code
+                         (|parse| code)
+                         (parse-file (car out-args))))
+                  (|*| (if code out-args (cdr out-args)))
+                  (build (cdr (assoc "b" out-opts :test #'string=))))
+             (if build (build build ast)
+                       (print-eval ast))))))))
 
 (defun print-eval (p)
   (handler-bind ((warning (lambda (x) (muffle-warning x))))
     (when nil
       (print p)
       (princ #\newline)
-      (print (sb-cltl2:macroexpand-all p))
+      #-sbcl (print (macroexpand p))
+      #+sbcl (print (sb-cltl2:macroexpand-all p))
       (princ #\newline))
     (unwind-protect
         (eval p)
