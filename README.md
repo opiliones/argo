@@ -8,8 +8,9 @@ posix互換ではありません。
 
 ## オプション
 argo.lisp  
-argo.lisp -b BINARY-FILE  
-argo.lisp -c {STRING|FILE}  
+argo.lisp -b FILENAME  
+argo.lisp -c STRING  
+argo.lisp FILE   
 argo.lisp -x  
 
 * bオプション: cオプション引数又はFILEのコードをコンパイルしてBINARY-FILEを作成します。
